@@ -5,6 +5,10 @@ from .models import ReportTables
 
 FICTITIOUS='Dados fictícios para teste; não representam resultados da pesquisa.'
 MULTIPLICITY='Valores de p bilaterais sem ajuste; análises exploratórias estão sujeitas à multiplicidade. Associações não demonstram causalidade.'
+METHOD_LABELS={'welch_t':'Welch t','welch_anova':'Welch ANOVA','mann_whitney':'Mann–Whitney','kruskal':'Kruskal–Wallis','spearman':'Spearman','pearson':'Pearson','fisher':'Fisher exato','chi_square':'Qui-quadrado','descriptive':'Descritiva'}
+EFFECT_LABELS={'mean_difference':'Diferença média','odds_ratio':'Razão de chances (OR)','prevalence_ratio':'Razão de prevalências','probability_superiority':'Probabilidade de superioridade','correlation':'Correlação'}
+FAMILY_LABELS={'primary':'principal','complementary':'complementar','exploratory':'exploratória'}
+P_LABELS={'parametric':'paramétrico','asymptotic':'assintótico','exact':'exato','permutation_exact':'permutação exaustiva','not_computed':'não calculado'}
 
 def number(v,digits=1):
     return '' if v is None or pd.isna(v) else f'{float(v):.{digits}f}'.replace('.',',')
@@ -26,7 +30,8 @@ def build_tables(results,summaries,profile,*,data=None):
                     for code,count in valid.value_counts().sort_index().items():
                         labels={1:'Ausente ou leve (0–20)',2:'Moderada (21–40)',3:'Moderada a severa (41–60)',4:'Severa (61–88)'} if name=='ZARIT_CLASS' else (var.labels if var else {})
                         category=labels.get(code,f'Código {code}')
-                        rows.append([label,str(category),int(count),number(100*count/n)+'%'])
+                        denominator=len(data) if name in ('FISIO','FONO','TER_OCUP','PSI','PSICOP') else n
+                        rows.append([label,str(category),int(count),number(100*count/denominator)+'%'])
                 else:
                     numeric=pd.to_numeric(valid,errors='coerce').dropna()
                     rows.append([label,'Média (DP amostral)',len(numeric),f'{number(numeric.mean())} ({number(numeric.std(ddof=1))})'])
@@ -35,17 +40,19 @@ def build_tables(results,summaries,profile,*,data=None):
             frames.append(pd.DataFrame(rows,columns=['Variável','Medida / categoria','n','Resultado']))
     else:
         for _ in groups:frames.append(pd.DataFrame(columns=['Variável','Medida / categoria','n','Resultado']))
-    bivariate=[];narrative=[];notes=[MULTIPLICITY,'Percentuais calculados por respostas válidas da variável; para terapias múltiplas, usar o total de participantes com resposta válida.','PSQI informado: recálculo dos componentes pendente de confirmação do manual.']
+    bivariate=[];narrative=[];notes=[MULTIPLICITY,'Percentuais por respostas válidas da variável; terapias múltiplas usam o total de participantes, com ausentes indicados separadamente.','PSQI informado: recálculo dos componentes pendente de confirmação do manual.']
     rows=[]
     for analysis in results:
         s=analysis.spec;r=analysis.result;effect=[]
         for name,e in r.effects.items():
-            text=f'{name}: {number(e.value,3)}'
+            text=f'{EFFECT_LABELS.get(name,name)}: {number(e.value,3)}'
             text+=f' [{number(e.ci95[0],3)}; {number(e.ci95[1],3)}]' if e.ci95 else ' (IC não disponível: '+str(e.unavailable_reason or 'método/amostra insuficiente')+')'
             effect.append(text)
-        rows.append([f'{s.outcome} × {s.predictor}',r.n_effective,r.method,format_p(r.p_value),'; '.join(effect) or 'Sem estimativa global'])
-        narrative.append(f'{s.outcome} e {s.predictor}: análise {s.family}, {r.method}, n={r.n_effective}, p={format_p(r.p_value)}. '+('Não foi calculada inferência para esta comparação.' if r.p_value is None else 'A comparação descreve associação, sem estabelecer causalidade.'))
-        notes.append(f'{s.id}: ausentes={r.n_missing}; p={r.p_kind}; pressupostos: '+', '.join(r.assumptions)+'; avisos: '+', '.join(r.warnings))
+        method=METHOD_LABELS.get(r.method,r.method)
+        rows.append([f'{s.outcome} × {s.predictor}',r.n_effective,method,format_p(r.p_value),'; '.join(effect) or 'Sem estimativa global'])
+        narrative.append(f'{s.outcome} e {s.predictor}: análise {FAMILY_LABELS.get(s.family,s.family)}, {method}, n={r.n_effective}, p={format_p(r.p_value)}. '+('Não foi calculada inferência para esta comparação.' if r.p_value is None else 'A comparação descreve associação, sem estabelecer causalidade.'))
+        warnings=[text.replace('zero_cell_no_automatic_correction','Célula zero: nenhuma correção automática aplicada') for text in r.warnings]
+        notes.append(f'{s.outcome} × {s.predictor}: ausentes={r.n_missing}; p {P_LABELS.get(r.p_kind,r.p_kind)}; pressupostos: '+', '.join(r.assumptions)+'; avisos: '+(', '.join(warnings) or 'nenhum adicional'))
     if rows:bivariate.append(pd.DataFrame(rows,columns=['Comparação','n','Método','p','Estimativa / IC95%']))
     return ReportTables(tuple(frames),tuple(bivariate),tuple(notes),tuple(narrative))
 

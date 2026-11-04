@@ -29,7 +29,7 @@ def score_zarit(row,profile=None):
     try:
         if any(float(v)!=int(float(v)) or not 0<=float(v)<=4 for v in values):raise ValueError()
         total=sum(int(float(v)) for v in values)
-    except (ValueError,TypeError):return ScoreResult(None,None,issues=('invalid_item',))
+    except (ValueError,TypeError,OverflowError):return ScoreResult(None,None,issues=('invalid_item',))
     return ScoreResult(total,classify_zarit(total),tuple(int(float(v)) for v in values))
 
 def score_psqi(row,profile):
@@ -41,5 +41,7 @@ def compare_recorded_scores(df,profile):
     for i,row in df.iterrows():
         for name,scorer in [('ZARIT',score_zarit),('PSQI',score_psqi)]:
             result=scorer(row,profile);recorded=row.get(name)
-            records.append(dict(row_index=i,instrument=name,recorded=recorded,recalculated=result.total,difference=(result.total-float(recorded)) if result.total is not None and pd.notna(recorded) else None,issues='; '.join(result.issues)))
+            numeric=pd.to_numeric(pd.Series([recorded]),errors='coerce').iloc[0]
+            flags=result.issues+(('invalid_recorded_score',) if pd.notna(recorded) and pd.isna(numeric) else ())
+            records.append(dict(row_index=i,instrument=name,recorded=recorded,recalculated=result.total,difference=(result.total-float(numeric)) if result.total is not None and pd.notna(numeric) else None,issues='; '.join(flags)))
     return pd.DataFrame(records)

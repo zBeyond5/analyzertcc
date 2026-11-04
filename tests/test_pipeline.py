@@ -19,6 +19,8 @@ def test_pipeline_demo_outputs(source_path,tmp_path):
         assert {'docx','pdf','tables','csv','xlsx','dictionary','manifest','audit','zip'}==set(result.files)
         assert len(result.results)==3
         assert result.results[0].result.n_effective==30
+        assert any('n=4' in text for text in result.results[0].result.assumptions)
+        assert any('primeiro menos segundo' in text for text in result.results[0].result.assumptions)
         manifest=json.loads(m.read_artifact(s,j,'manifest'))
         assert manifest['fictitious'] is True and manifest['score_source']=='recorded'
         assert manifest['source_sha256']==prepared.source_meta.source_sha256

@@ -46,3 +46,9 @@ def test_reports_are_readable_and_fictitious(fictitious_df,tmp_path):
     reader=PdfReader(pdf)
     assert len(reader.pages)>0 and 'Dados fictícios' in reader.pages[0].extract_text()
     assert all(len(p.extract_text())>10 for p in reader.pages)
+
+def test_therapy_percentages_use_total(fictitious_df):
+    fictitious_df.loc[fictitious_df.index[fictitious_df.FONO==2][0],'FONO']=float('nan')
+    table=build_tables((),(),load_profile(),data=fictitious_df).descriptive[1]
+    row=table[(table['Variável']=='Fonoaudiologia') & (table['n']==24)].iloc[0]
+    assert row['Resultado']=='80,0%'

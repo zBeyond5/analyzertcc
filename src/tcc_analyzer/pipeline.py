@@ -38,6 +38,9 @@ def analyze_pair(df,spec,profile):
         order=spec.group_order or tuple(sorted(pair[group].unique()))
         groups=tuple(pd.to_numeric(pair.loc[pair[group]==g,number]).to_numpy(dtype=float) for g in order)
         result=compare_groups(groups,method=method,seed=20261104)
+        descriptions=tuple(f'Grupo {group}={code}: n={len(values)}, média={np.mean(values):.3f}, mediana={np.median(values):.3f}.' for code,values in zip(order,groups))
+        result.assumptions+=descriptions
+        if len(groups)==2:result.assumptions+=(f'Ordem: {order[0]} e {order[1]}; diferença do primeiro menos segundo; superioridade do primeiro grupo.',)
     else:
         result=correlate(pd.to_numeric(pair[fields[0]]).to_numpy(float),pd.to_numeric(pair[fields[1]]).to_numpy(float),method=method,seed=20261104)
     result.n_missing=len(df)-len(pair)

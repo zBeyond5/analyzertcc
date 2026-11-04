@@ -1,12 +1,12 @@
 from dataclasses import asdict,replace
 from pathlib import Path
-import io,json
+import io,json,logging,traceback
 import numpy as np
 import openpyxl
 import pandas as pd
 import streamlit as st
 from ..models import DomainError,CsvOptions,Transformation,ComparisonSpec,ImportedDataset
-from ..profiles import load_profile,dictionary_frame
+from ..profiles import load_profile,dictionary_frame,confirm_codebook
 from ..importers import inspect_upload,load_table
 from ..jobs import get_manager
 from ..validation import prepare_dataset,validate_dataset
@@ -23,9 +23,20 @@ STEPS=('1 · Importar','2 · Validar','3 · Cruzamentos','4 · Resultados','5 ·
 METHOD_NAMES={'auto':'Recomendação conforme a tabela','welch_t':'Welch — diferença entre médias','mann_whitney':'Mann–Whitney — ordenação das respostas','welch_anova':'Welch — vários grupos','kruskal':'Kruskal–Wallis — vários grupos','fisher':'Fisher exato','chi_square':'Qui-quadrado','descriptive':'Somente descrição, sem p','spearman':'Correlação de Spearman','pearson':'Correlação de Pearson'}
 FAMILIES={'primary':'Principal','complementary':'Complementar','exploratory':'Exploratória'}
 
+def display_frame(frame):
+    result=frame.copy()
+    for name in result:
+        if pd.api.types.is_object_dtype(result[name]):result[name]=result[name].map(lambda x:'' if pd.isna(x) else str(x))
+    return result
+
 def go(step):
-    st.session_state.navigation=STEPS[step]
+    st.session_state.next_step=step
     st.rerun()
+
+@st.cache_resource(show_spinner=False)
+def server_manager():
+    # Compartilhar somente controle de concorrência e propriedade; nunca DataFrames ou resultados.
+    return get_manager()
 
 def import_bytes(state,manager,payload,filename,sheet=None,options=None,demo=False):
     job=manager.create_job(state.session)
@@ -67,7 +78,7 @@ def render_import(state,manager):
             import_bytes(state,manager,source.read_bytes(),source.name,'Banco_EpiInfo',demo=True);go(1)
     if state.imported:
         st.subheader('Prévia da entrada original')
-        st.dataframe(state.imported.raw.head(30),hide_index=True,width='stretch')
+        st.dataframe(display_frame(state.imported.raw.head(30)),hide_index=True,width='stretch')
 
 def render_validation(state,manager):
     if state.prepared is None:st.info('Importe um banco para visualizar as validações.');return
@@ -83,26 +94,21 @@ def render_validation(state,manager):
         st.dataframe(pd.DataFrame([{'Linha':i.row_index+1 if i.row_index is not None else 'Todas','Campo':i.variable,'Valor':str(i.raw_value),'Nível':i.severity,'Orientação':i.message_pt} for i in actual]),hide_index=True,width='stretch')
     else:st.success('Não foram encontrados erros nos valores, na soma Zarit ou no ponto de corte PSQI informado.')
     with st.expander('Visualizar banco e dicionário',expanded=False):
-        st.dataframe(df,hide_index=True,width='stretch')
+        st.dataframe(display_frame(df),hide_index=True,width='stretch')
         st.dataframe(dictionary_frame(state.profile),hide_index=True,width='stretch')
         unknown=[c for c in df if c not in {v.name for v in state.profile.variables}|{'ZARIT_CLASS'}]
         if unknown:st.warning('Campos adicionais ficam fora das análises e exportações: '+', '.join(unknown))
     with st.expander('Conferir totais fornecidos e recalculados'):
-        st.dataframe(compare_recorded_scores(df,state.profile),hide_index=True,width='stretch')
+        st.dataframe(display_frame(compare_recorded_scores(df,state.profile)),hide_index=True,width='stretch')
     with st.expander('Confirmar legendas para analisar dados de pesquisa'):
         st.write('Informe a legenda dos códigos e a referência usada para conferência. Esta confirmação vale apenas nesta sessão e fica no manifesto.')
         rows=[{'Campo':v.name,'Código':str(k),'Legenda':label} for v in state.profile.variables if v.kind=='categorical' for k,label in v.labels.items()]
-        edited=st.data_editor(pd.DataFrame(rows),disabled=['Campo','Código'],hide_index=True,width='stretch',key='dictionary_editor')
+        edited=st.data_editor(pd.DataFrame(rows),num_rows='dynamic',column_config={'Campo':st.column_config.SelectboxColumn(options=[v.name for v in state.profile.variables if v.kind=='categorical'])},hide_index=True,width='stretch',key='dictionary_editor')
         reference=st.text_input('Referência da conferência (documento, versão ou responsável)',key='mapping_reference')
         acknowledged=st.checkbox('Conferi as legendas com a documentação deste banco.',key='mapping_ack')
         if st.button('Aplicar legendas confirmadas',disabled=not acknowledged or len(reference.strip())<10):
-            variables=[]
-            for v in state.profile.variables:
-                selected=edited[edited.Campo==v.name]
-                labels={int(row['Código']):str(row['Legenda']).strip() for _,row in selected.iterrows()}
-                if any(not s or 'não confirmada' in s for s in labels.values()):raise DomainError('labels','Substitua as legendas pendentes pelos significados confirmados dos códigos.')
-                variables.append(replace(v,mapping_status='confirmed',labels=labels or v.labels))
-            state.profile=replace(state.profile,variables=tuple(variables),confirmation=reference.strip());invalidate_after_change(state);st.rerun()
+            state.profile=confirm_codebook(state.profile,edited.to_dict('records'),reference)
+            invalidate_after_change(state);st.rerun()
     with st.expander('Corrigir um valor com registro e possibilidade de desfazer'):
         with st.form('correction_form'):
             a,b=st.columns(2);row=int(a.number_input('Linha do banco',1,len(df),1))-1
@@ -169,6 +175,8 @@ def render_comparisons(state,manager):
                     exposed=st.selectbox('Código do grupo comparado (outro = referência)',x,key='exposed_'+c.id)
                     order=(exposed,next(g for g in x if g!=exposed))
             configured.append(replace(c,method=method,rationale=rationale,group_order=order,event_value=event))
+    if state.options and state.options.comparisons!=tuple(configured):
+        invalidate_after_change(state);state.options=None
     st.warning('Valores de p sem ajuste de multiplicidade. Não escolha o método apenas por normalidade ou pelo menor p; associações não estabelecem causalidade.')
     assumptions=st.checkbox('Conferi independência, distribuição, tamanho dos grupos e o que cada método estima.',key='assumptions')
     if st.button('Executar análise',type='primary',disabled=not assumptions or not configured,key='run_analysis'):
@@ -201,7 +209,7 @@ def render_results(state,manager):
             st.json(asdict(analysis.result),expanded=False)
     st.subheader('Texto e notas que acompanham o relatório')
     for text in state.artifacts.tables.narrative+state.artifacts.tables.notes:st.write(text)
-    state.reviewed=st.checkbox('Revisei as tabelas, os métodos e as limitações deste relatório.',value=state.reviewed,key='review_report')
+    state.reviewed=st.checkbox('Revisei as tabelas, os métodos e as limitações deste relatório.',value=state.reviewed,key='review_report_'+state.job.id)
     if st.button('Ir para exportação',type='primary',disabled=not state.reviewed):go(4)
 
 def render_exports(state,manager):
@@ -221,7 +229,7 @@ def render_exports(state,manager):
 def main():
     st.set_page_config(page_title='Análise bivariada do TCC',page_icon='📊',layout='wide')
     st.markdown('''<style>
-    html,body,[class*="css"]{font-family:"Segoe UI",sans-serif} .block-container{max-width:1360px;padding-top:2rem} h1{font-weight:650;font-size:2.2rem} h2{font-size:1.6rem} h3{font-size:1.18rem} [data-testid="stMetricValue"]{font-variant-numeric:tabular-nums} .private-download{display:inline-block;background:#1F6675;color:white!important;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;margin:10px 0} a:focus-visible,button:focus-visible{outline:3px solid #8A4B00!important;outline-offset:3px}
+    html,body,[class*="css"]{font-family:"Segoe UI",sans-serif} .block-container{max-width:1360px;padding-top:4rem} h1{font-weight:650;font-size:2.2rem} h2{font-size:1.6rem} h3{font-size:1.18rem} [data-testid="stMetricValue"]{font-variant-numeric:tabular-nums} .private-download{display:inline-block;background:#1F6675;color:white!important;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;margin:10px 0} a:focus-visible,button:focus-visible{outline:3px solid #8A4B00!important;outline-offset:3px}
     </style>''',unsafe_allow_html=True)
     if 'workflow' not in st.session_state:st.session_state.workflow=WorkflowState()
     state=st.session_state.workflow
@@ -235,13 +243,16 @@ def main():
         if st.button('Iniciar outra análise',key='reset'):
             st.session_state.workflow=WorkflowState(session=state.session);go(0)
         st.divider();st.caption('Retenção temporária: 60 minutos. Acesso remoto somente pela rede Hamachi autorizada.')
+    if 'next_step' in st.session_state:st.session_state.navigation=STEPS[st.session_state.pop('next_step')]
     selected=st.radio('Etapas da análise',STEPS,horizontal=True,key='navigation',label_visibility='collapsed')
     if state.fictitious:st.warning(FICTITIOUS)
     try:
-        manager=get_manager()
+        manager=server_manager()
         [render_import,render_validation,render_comparisons,render_results,render_exports][STEPS.index(selected)](state,manager)
     except DomainError as error:st.error(str(error))
-    except Exception:
+    except Exception as error:
+        last=traceback.extract_tb(error.__traceback__)[-1]
+        logging.error('Falha na etapa %s: %s em %s:%s',STEPS.index(selected),type(error).__name__,Path(last.filename).name,last.lineno)
         st.error('Não foi possível concluir esta etapa. Confira os dados e tente novamente; nenhum arquivo de outra sessão foi acessado.')
 
 if __name__=='__main__':main()

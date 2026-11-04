@@ -56,3 +56,36 @@ def test_scores(fictitious_df):
     assert score_zarit(row,p).total is None
     assert score_psqi(row,p).total is None
     assert 'psqi_rules_unconfirmed' in score_psqi(row,p).issues
+
+@pytest.mark.parametrize('field,value',[('PSQI',30),('PSQI',2.5),('ZARIT',-1),('N_MIN',-5),('DESP_NOT',-1),('H_DEIT',24)])
+def test_invalid_numeric_bounds(fictitious_df,field,value):
+    p=load_profile();p=replace(p,variables=tuple(replace(v,mapping_status='confirmed') for v in p.variables))
+    df=fictitious_df.astype(object);df.loc[0,field]=value
+    assert validate_dataset(df,p).blocks_analysis
+
+def test_incomplete_instrument_with_supplied_total_is_blocked(fictitious_df):
+    p=load_profile();p=replace(p,variables=tuple(replace(v,mapping_status='confirmed') for v in p.variables))
+    df=fictitious_df.copy();df.loc[0,'TEMP_VOC']=np.nan
+    assert any(i.code=='incomplete_instrument' for i in validate_dataset(df,p).issues)
+
+def test_confirmed_codebook_can_add_new_codes():
+    from tcc_analyzer.profiles import confirm_codebook
+    profile=load_profile()
+    entries=[{'Campo':v.name,'Código':str(k),'Legenda':f'Legenda confirmada {k}'} for v in profile.variables if v.kind=='categorical' for k in v.labels]
+    entries.append({'Campo':'ESCOL','Código':'7','Legenda':'Nível conferido no formulário'})
+    confirmed=confirm_codebook(profile,entries,'Formulário conferido pela responsável')
+    assert 7 in next(v for v in confirmed.variables if v.name=='ESCOL').allowed_values
+
+@pytest.mark.parametrize('field,value',[('ZARIT','inválido'),('TEMP_VOC',float('inf')),('N_MIN',float('nan'))])
+def test_invalid_or_incomplete_instrument_never_crashes(fictitious_df,field,value):
+    df=fictitious_df.astype(object);df.loc[0,field]=value
+    report=validate_dataset(df,load_profile())
+    assert any(i.severity=='error' and i.code!='mapping_pending' for i in report.issues)
+
+def test_comparison_handles_invalid_recorded_total(fictitious_df):
+    from tcc_analyzer.scales import compare_recorded_scores
+    df=fictitious_df.astype(object);df.loc[0,'ZARIT']='inválido'
+    compared=compare_recorded_scores(df,load_profile())
+    row=compared[(compared.row_index==0)&(compared.instrument=='ZARIT')].iloc[0]
+    assert pd.isna(row.difference)
+    assert 'invalid_recorded_score' in row.issues

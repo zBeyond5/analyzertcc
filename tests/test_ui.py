@@ -15,3 +15,4 @@ def test_app_demo_workflow(tmp_path,monkeypatch):
     assert not at.exception
     assert at.session_state['workflow'].prepared.data.shape==(30,76)
     assert at.session_state['workflow'].fictitious
+    assert at.session_state['navigation']=='2 · Validar'

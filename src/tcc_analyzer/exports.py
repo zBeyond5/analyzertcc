@@ -48,7 +48,11 @@ def export_epiinfo(df,profile,output_dir,csv_format=CsvFormat()):
     safe.to_csv(csv,index=False,sep=csv_format.separator,decimal=csv_format.decimal,encoding=csv_format.encoding,na_rep='')
     return ExportManifest({'csv':csv.name,'xlsx':xlsx.name},{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in (csv,xlsx)},csv_format,tuple(c for c in df if c not in columns),tuple(escapes))
 
-def export_dictionary(profile,output):return write_xlsx({'Dicionario':dictionary_frame(profile)},output)
+def export_dictionary(profile,output):
+    frame=dictionary_frame(profile)
+    frame.loc[frame.Campo=='ID','Rótulo']='ID sequencial por execução; vínculo com entrada não exportado'
+    frame.loc[len(frame)]={'Campo':'ZARIT_CLASS','Rótulo':'Faixas de Zarit','Tipo':'categorical','Códigos':'1, 2, 3, 4','Legenda':'1: 0–20; 2: 21–40; 3: 41–60; 4: 61–88','Confirmação':'confirmed','Exportar':True}
+    return write_xlsx({'Dicionario':frame},output)
 
 def write_audit(transformations,profile,output):
     safe={v.name for v in profile.variables if v.export_default and v.name!='ID'}
