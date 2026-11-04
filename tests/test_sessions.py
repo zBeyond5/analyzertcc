@@ -6,6 +6,23 @@ from tcc_analyzer.jobs import JobManager,SessionContext
 from tcc_analyzer.models import DomainError
 from tcc_analyzer.settings import Settings
 
+def test_second_server_cannot_delete_first_jobs(tmp_path):
+    root=tmp_path/'exclusive'
+    first=JobManager(root)
+    try:
+        job=first.create_job(SessionContext())
+        with pytest.raises(DomainError,match='Outra instância'):
+            JobManager(root)
+        assert job.directory.exists()
+    finally:first.close()
+
+def test_jobs_module_has_no_unconditional_windows_import():
+    import ast
+    from pathlib import Path
+    tree=ast.parse((Path(__file__).parents[1]/'src/tcc_analyzer/jobs.py').read_text(encoding='utf-8'))
+    imports=[name.name for node in tree.body if isinstance(node,ast.Import) for name in node.names]
+    assert 'msvcrt' not in imports
+
 @pytest.fixture
 def setup(tmp_path):
     now=[datetime(2026,11,4,tzinfo=timezone.utc)]

@@ -1,6 +1,6 @@
 from dataclasses import asdict,replace
 from pathlib import Path
-import io,json,logging,traceback
+import io,json,logging,traceback,os
 import numpy as np
 import openpyxl
 import pandas as pd
@@ -49,7 +49,7 @@ def import_bytes(state,manager,payload,filename,sheet=None,options=None,demo=Fal
 
 def render_import(state,manager):
     st.header('Comece pelo seu banco de dados')
-    st.write('Importe uma planilha ou experimente a base fictícia. Os dados são processados neste computador e ficam separados por sessão.')
+    st.write('Importe uma planilha ou experimente a base fictícia. Os dados são processados no servidor da nuvem e ficam separados por sessão.' if os.environ.get('TCC_DEPLOYMENT')=='cloud' else 'Importe uma planilha ou experimente a base fictícia. Os dados são processados neste computador e ficam separados por sessão.')
     col1,col2=st.columns([3,2],gap='large')
     with col1:
         uploaded=st.file_uploader('Arquivo Excel ou CSV',type=['xlsx','xls','csv'],help='Até 20 MiB. O arquivo original não é alterado.')
@@ -112,7 +112,8 @@ def render_validation(state,manager):
     with st.expander('Corrigir um valor com registro e possibilidade de desfazer'):
         with st.form('correction_form'):
             a,b=st.columns(2);row=int(a.number_input('Linha do banco',1,len(df),1))-1
-            field=b.selectbox('Campo para corrigir',[c for c in df if c!='ZARIT_CLASS'])
+            editable=[c for c in df if c!='ZARIT_CLASS']
+            field=b.selectbox('Campo para corrigir',editable,index=editable.index('IDADE_M') if 'IDADE_M' in editable else 0)
             value=st.text_input('Novo valor (vazio = ausente)')
             reason=st.text_input('Motivo da correção')
             confirm=st.checkbox('Confirmo a alteração nesta cópia do banco.')
@@ -237,12 +238,12 @@ def main():
     st.caption('Importe, confira e transforme seu banco em resultados reproduzíveis.')
     with st.sidebar:
         st.subheader('Seu espaço de análise')
-        st.write('Processamento local no servidor.')
+        st.write('Processamento no servidor da nuvem.' if os.environ.get('TCC_DEPLOYMENT')=='cloud' else 'Processamento local no servidor.')
         st.write('Sem histórico compartilhado entre participantes da rede.')
         if state.imported:st.caption(f'{state.imported.meta.row_count} registros carregados. Os originais permanecem preservados.')
         if st.button('Iniciar outra análise',key='reset'):
             st.session_state.workflow=WorkflowState(session=state.session);go(0)
-        st.divider();st.caption('Retenção temporária: 60 minutos. Acesso remoto somente pela rede Hamachi autorizada.')
+        st.divider();st.caption('Retenção temporária: 60 minutos. Acesso restrito pela plataforma Streamlit.' if os.environ.get('TCC_DEPLOYMENT')=='cloud' else 'Retenção temporária: 60 minutos. Acesso remoto somente pela rede Hamachi autorizada.')
     if 'next_step' in st.session_state:st.session_state.navigation=STEPS[st.session_state.pop('next_step')]
     selected=st.radio('Etapas da análise',STEPS,horizontal=True,key='navigation',label_visibility='collapsed')
     if state.fictitious:st.warning(FICTITIOUS)

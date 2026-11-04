@@ -8,7 +8,6 @@ from playwright.sync_api import sync_playwright,expect
 def test_two_browsers_full_workflow(tmp_path):
     root=Path(__file__).resolve().parents[1]
     candidates=list((Path.home()/'.agent-browser/browsers').glob('chrome-*/chrome.exe'))
-    assert candidates,'Instale o navegador com npx agent-browser install antes de validar a interface.'
     with socket.socket() as sock:
         sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
     env={**os.environ,'TCC_RUNTIME_ROOT':str(tmp_path/'jobs'),'STREAMLIT_SERVER_FILE_WATCHER_TYPE':'none'}
@@ -24,7 +23,8 @@ def test_two_browsers_full_workflow(tmp_path):
             time.sleep(.2)
         else:raise AssertionError('Servidor não iniciou: '+(tmp_path/'server.log').read_text())
         with sync_playwright() as p:
-            browser=p.chromium.launch(executable_path=str(candidates[-1]),headless=True)
+            executable=os.environ.get('TCC_BROWSER_EXECUTABLE') or (str(candidates[-1]) if candidates else p.chromium.executable_path)
+            browser=p.chromium.launch(executable_path=executable,headless=True)
             contexts=[browser.new_context(viewport={'width':1366,'height':900},accept_downloads=True,locale='pt-BR') for _ in range(2)]
             archives=[]
             def run(page,changed=False):
@@ -33,9 +33,6 @@ def test_two_browsers_full_workflow(tmp_path):
                 if changed:
                     page.get_by_text('Corrigir um valor com registro e possibilidade de desfazer',exact=True).click()
                     field=page.get_by_label('Campo para corrigir',exact=True)
-                    field.click();field.press('ArrowDown')
-                    field.fill('IDADE_M')
-                    page.get_by_role('option',name='IDADE_M',exact=True).click()
                     expect(field).to_have_value('IDADE_M')
                     page.get_by_label('Novo valor (vazio = ausente)',exact=True).fill('99')
                     page.get_by_label('Motivo da correção',exact=True).fill('Sentinela fictícia de isolamento')

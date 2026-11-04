@@ -2,7 +2,11 @@ from contextlib import contextmanager
 from dataclasses import dataclass,field
 from datetime import datetime,timedelta,timezone
 from pathlib import Path
-import atexit,msvcrt,re,secrets,shutil,threading,zipfile,os
+import atexit,re,secrets,shutil,threading,zipfile,os
+if os.name == 'nt':
+    import msvcrt
+else:
+    import fcntl
 from .models import DomainError
 from .settings import Settings
 from .importers import inspect_upload
@@ -30,6 +34,13 @@ class CleanupSummary:
 
 ALLOWED_ARTIFACTS={'relatorio.docx','relatorio.pdf','tabelas.xlsx','epiinfo_dados.xlsx','epiinfo_dados.csv','dicionario.xlsx','manifesto.json','auditoria.json','resultado_completo.zip'}
 
+def _file_lock(file,acquire):
+    file.seek(0)
+    if os.name == 'nt':
+        msvcrt.locking(file.fileno(),msvcrt.LK_NBLCK if acquire else msvcrt.LK_UNLCK,1)
+    else:
+        fcntl.flock(file.fileno(),fcntl.LOCK_EX | fcntl.LOCK_NB if acquire else fcntl.LOCK_UN)
+
 class JobManager:
     def __init__(self,root,settings=Settings(),clock=None):
         self.root=Path(root).resolve();self.root.mkdir(parents=True,exist_ok=True)
@@ -37,7 +48,7 @@ class JobManager:
         self._jobs={};self._lock=threading.RLock();self._slots=threading.BoundedSemaphore(settings.max_heavy_runs)
         self._stop=threading.Event();self._closed=False
         self._file=(self.root/'.server.lock').open('a+b');self._file.write(b'0');self._file.flush();self._file.seek(0)
-        try:msvcrt.locking(self._file.fileno(),msvcrt.LK_NBLCK,1)
+        try:_file_lock(self._file,True)
         except OSError:
             self._file.close();raise DomainError('instance','Outra instância já utiliza os trabalhos deste diretório.') from None
         for p in self.root.iterdir():
@@ -138,7 +149,7 @@ class JobManager:
         if self._closed:return
         self._stop.set();self._closed=True
         self._file.seek(0)
-        try:msvcrt.locking(self._file.fileno(),msvcrt.LK_UNLCK,1)
+        try:_file_lock(self._file,False)
         finally:self._file.close()
 
 _manager=None

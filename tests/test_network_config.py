@@ -1,9 +1,12 @@
 import json
 import shutil
 import subprocess
+import sys
+import pytest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+pytestmark=pytest.mark.skipif(sys.platform!='win32',reason='Scripts exclusivos do Windows/Hamachi; núcleo e navegador são testados em Linux.')
 SHELL = shutil.which("pwsh") or shutil.which("powershell")
 
 
