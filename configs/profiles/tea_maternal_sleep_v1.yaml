@@ -1,0 +1,975 @@
+id: tea_maternal_sleep_v1
+version: 1.0-draft
+psqi_rules:
+  status: pending
+  reason: Manual e correspondência dos itens não confirmados; utilizar PSQI informado.
+variables:
+- name: ID
+  label: Identificador de entrada
+  kind: text
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: IDADE_M
+  label: Idade materna (anos)
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: SIT_CONJ
+  label: SIT_CONJ
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: ESCOL
+  label: 'Escolaridade: legenda pendente'
+  kind: categorical
+  allowed_values:
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: pending
+  labels:
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: OCUP
+  label: OCUP
+  kind: text
+  allowed_values: null
+  export_default: false
+  mapping_status: confirmed
+  labels: {}
+- name: RENDA
+  label: 'Renda: legenda pendente'
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: RED_APO
+  label: Rede de apoio
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: FILHOS
+  label: FILHOS
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: TRAB_NOT
+  label: TRAB_NOT
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: DOENCA
+  label: DOENCA
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: ANTIDEP
+  label: ANTIDEP
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: ANSIED
+  label: ANSIED
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: DEPRE
+  label: DEPRE
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: IDADE_C
+  label: Idade da criança (anos)
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: SEXO
+  label: SEXO
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: TEMP_TEA
+  label: TEMP_TEA
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: ACOMP_TEP
+  label: ACOMP_TEP
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: FISIO
+  label: FISIO
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: FONO
+  label: Fonoaudiologia
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: TER_OCUP
+  label: TER_OCUP
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: PSI
+  label: PSI
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: PSICOP
+  label: PSICOP
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: OUTRA
+  label: OUTRA
+  kind: text
+  allowed_values: null
+  export_default: false
+  mapping_status: confirmed
+  labels: {}
+- name: FREQ_TEP
+  label: FREQ_TEP
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: pending
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: ALT_SONO
+  label: Alterações no sono da criança
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: DESP_NOT
+  label: Despertares noturnos
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: CHORO
+  label: CHORO
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: SUPERV
+  label: Supervisão constante
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: H_DEIT
+  label: Hora decimal de deitar
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: N_MIN
+  label: Latência do sono (minutos)
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: H_LEV
+  label: Hora decimal de levantar
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: H_SONO
+  label: Horas de sono
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: NAO_CONS
+  label: NAO_CONS
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: ACORD
+  label: ACORD
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: PREC_LEV
+  label: PREC_LEV
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: NAO_RESP
+  label: NAO_RESP
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: TOS_RONC
+  label: TOS_RONC
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: FRIO
+  label: FRIO
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: CALOR
+  label: CALOR
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: SONHOS
+  label: SONHOS
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: DOR
+  label: DOR
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: DIF_DORM
+  label: DIF_DORM
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: QUA_SONO
+  label: QUA_SONO
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: FREQ_MED
+  label: FREQ_MED
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: DIF_ACOR
+  label: DIF_ACOR
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: ANIMO
+  label: ANIMO
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: PARCEIRO
+  label: PARCEIRO
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 3
+  export_default: true
+  mapping_status: pending
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+- name: TEMP_VOC
+  label: TEMP_VOC
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: ESTRES
+  label: ESTRES
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: IRRIT
+  label: IRRIT
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: AFET_REL
+  label: AFET_REL
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: MEDO
+  label: MEDO
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: DEPENDE
+  label: DEPENDE
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: TENSO
+  label: TENSO
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: SAU_FIS
+  label: SAU_FIS
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: PRIV
+  label: PRIV
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: VID_SOC
+  label: VID_SOC
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: DESCONF
+  label: DESCONF
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: UNICA_P
+  label: UNICA_P
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: DINHEIRO
+  label: DINHEIRO
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: CAP_CUI
+  label: CAP_CUI
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: CONTROLE
+  label: CONTROLE
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: INCAPAZ
+  label: INCAPAZ
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: FAZ_MAIS
+  label: FAZ_MAIS
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: CUID_MEL
+  label: CUID_MEL
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: MAIS_AJUD
+  label: MAIS_AJUD
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: EXAUSTO
+  label: EXAUSTO
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: CONST
+  label: CONST
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: UNIC_RESP
+  label: UNIC_RESP
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Código 0 (legenda não confirmada)
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+    3: Código 3 (legenda não confirmada)
+    4: Código 4 (legenda não confirmada)
+- name: PSQI
+  label: PSQI informado (0–21)
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: ZARIT
+  label: Sobrecarga Zarit informada
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: PSQI_G
+  label: Qualidade do sono informada
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Boa qualidade (≤5)
+    2: Má qualidade (>5)
+- name: ESCOL_B
+  label: ESCOL_B
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: RENDA_B
+  label: RENDA_B
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
+- name: FREQ_3
+  label: FREQ_3
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: pending
+  labels:
+    1: Código 1 (legenda não confirmada)
+    2: Código 2 (legenda não confirmada)
