@@ -1,0 +1,32 @@
+# Fontes e dados privados
+fontes/
+fixtures/source/
+runtime/
+uploads/
+outputs/
+
+# Ambiente e caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Segredos e evidências locais
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+*.log
+test-results/
+playwright-report/
+
+.superpowers/
+node_modules/
+.agents/
+.agents-lock.json
+
