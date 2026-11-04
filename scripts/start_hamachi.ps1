@@ -13,7 +13,7 @@ $policy = $policyJson | ConvertFrom-Json
 $assigned = @(Get-NetIPAddress -AddressFamily IPv4 -IPAddress $HamachiAddress -ErrorAction SilentlyContinue | Where-Object InterfaceAlias -eq $HamachiInterfaceAlias)
 if ($assigned.Count -ne 1) { throw 'Hamachi: o endereço informado não pertence à interface indicada. O servidor não foi iniciado.' }
 $ruleName = 'TCC Analyzer Hamachi 8501'
-$rules = @(Get-NetFirewallRule -DisplayName $ruleName -Enabled True -Direction Inbound -Action Allow -ErrorAction SilentlyContinue)
+$rules = @(Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue | Where-Object { $_.Enabled -eq 'True' -and $_.Direction -eq 'Inbound' -and $_.Action -eq 'Allow' })
 if ($rules.Count -ne 1) { throw 'Hamachi: configure primeiro a regra restrita com scripts/configure_firewall.ps1 como administrador.' }
 $port = $rules[0] | Get-NetFirewallPortFilter
 $address = $rules[0] | Get-NetFirewallAddressFilter
