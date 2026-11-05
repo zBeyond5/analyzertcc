@@ -11,6 +11,8 @@ from .statistics.selection import freeze_comparisons,recommend_test
 from .statistics.descriptive import describe
 from .statistics.categorical import analyze_contingency
 from .statistics.numeric import compare_groups,correlate
+from .presentation import build_document
+from .report_figures import build_chart_data,render_figure
 
 DEMO_SHA256='e2a2fb48502e3a31b06af7c421417afc3819465a59c54127a1805fab3c137f3c'
 UPDATED_DEMO_SHA256='833acfeb3e5fee0c384c825acbc825fde105962871d823da9e591b80c4c44d81'
@@ -81,12 +83,21 @@ def run_pipeline(*,manager,session,job,source_path,prepared,profile,options,prog
         meta['score_source']='calculated_from_responses' if all('calculado' in v for v in origins.values()) else 'recorded' if all('informado' in v for v in origins.values()) else 'mixed'
         meta['limitations'][0]='PSQI: '+origins['PSQI']
         meta.update(score_origins=origins,alpha=.05,interpretation_version='av3-p-v1',population_policy=population.policy,n_source=len(prepared.data),n_included=len(df),included_rows=population.included_rows,excluded=population.excluded)
+        document=build_document(results,tables,reporting_profile,df,meta)
+        tables.narrative=tuple(c.reading for c in document.comparisons)
+        tables.notes=document.summary+document.limitations
+        if document.comparisons:
+            tables.bivariate=(pd.DataFrame([[c.title,c.n_effective,c.method_label,c.p_display or 'Não calculado',c.interpretation,'; '.join(c.estimates) or 'Sem estimativa global disponível'] for c in document.comparisons],columns=['Comparação','Participantes','Método','Valor de p','Interpretação','Estimativa / intervalo de confiança de 95%']),)
+        figures=build_report_figures(df,profile,comparisons,manager.settings.max_artifact_bytes)
+        meta['presentation_version']='readable-reports-v1'
+        meta['report_style']='editorial'
         progress('Gerando relatórios e arquivos de exportação')
         folder=job.directory
-        files={'docx':render_docx(tables,meta,folder/'relatorio.docx'),'pdf':render_pdf(tables,meta,folder/'relatorio.pdf')}
+        files={'docx':render_docx(tables,meta,folder/'relatorio.docx',document=document,figures=figures),'pdf':render_pdf(tables,meta,folder/'relatorio.pdf',document=document,figures=figures)}
         frames={f'Descritiva {i+1}':f for i,f in enumerate(tables.descriptive)}
         frames.update({f'Bivariada {i+1}':f for i,f in enumerate(tables.bivariate)})
-        frames['Resultados numericos']=pd.DataFrame([dict(comparacao=a.spec.id,metodo=a.result.method,n=a.result.n_effective,p=a.result.p_value,estatistica=a.result.statistic) for a in results])
+        frames['Resultados numéricos']=pd.DataFrame([[c.title,c.method_label,a.result.n_effective,a.result.p_value,a.result.statistic] for a,c in zip(results,document.comparisons)],columns=['Comparação','Método','Participantes','Valor de p','Estatística do teste'])
+        frames['Glossário']=pd.DataFrame(document.glossary.items(),columns=['Termo','Significado'])
         files['tables']=write_xlsx(frames,folder/'tabelas.xlsx')
         export=export_epiinfo(df,profile,folder,options.csv_format)
         files.update({k:folder/v for k,v in export.files.items()})
@@ -98,4 +109,15 @@ def run_pipeline(*,manager,session,job,source_path,prepared,profile,options,prog
         files['zip']=manager.bundle_results(session,job)
         manager.complete(session,job)
         progress('Análise concluída')
-        return RunArtifacts(files,tables,results,meta)
+        return RunArtifacts(files,tables,results,meta,document)
+
+
+def build_report_figures(data,profile,comparisons,max_bytes):
+    figures={};total=0
+    for spec in comparisons:
+        chart=build_chart_data(data,profile,spec)
+        if chart is None:continue
+        png=render_figure(chart);total+=len(png)
+        if total>max_bytes:raise DomainError('artifact_size','Os gráficos excedem o limite desta exportação. Reduza os cruzamentos para gerar o relatório completo.')
+        figures[spec.id]=png;figures[spec.id+'_caption']=chart.caption
+    return figures

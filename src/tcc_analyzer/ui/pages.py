@@ -226,23 +226,24 @@ def render_results(state,manager):
     summary,tables,details=st.tabs(['Resumo','Tabelas','Detalhes'])
     with summary:
         from .charts import render_charts
-        from ..interpretation import interpret_p,LABELS
+        document=state.artifacts.presentation
+        if document is None:
+            from ..presentation import build_document
+            from ..analysis_population import select_population
+            document=build_document(state.artifacts.results,state.artifacts.tables,state.profile,select_population(state.prepared.data,state.profile).data,state.artifacts.metadata)
         with st.expander('Como ler o valor de p'):
-            st.write('O projeto usa p < 0,05. Desvio padrão mostra a variação das respostas; p avalia a comparação estatística. Significância não demonstra causa nem importância prática.')
-        for analysis in state.artifacts.results:
-            result=analysis.result;answer=interpret_p(result.p_value,p_kind=result.p_kind)
-            labels={v.name:v.label for v in state.profile.variables}
-            title=f'{labels.get(analysis.spec.outcome,analysis.spec.outcome)} × {labels.get(analysis.spec.predictor,analysis.spec.predictor)}'
-            st.subheader(title)
-            st.write(f"**{LABELS[answer['status']]}** · p = {answer['p_display']}")
-            st.caption(f'{METHOD_NAMES.get(result.method,result.method)} · {result.n_effective} pares completos · {result.n_missing} ausentes')
-            st.write(answer['explanation'])
-            if answer['status']=='unavailable':
-                for warning in result.warnings:st.caption(warning)
-            for name,effect in result.effects.items():
-                from ..reporting import EFFECT_LABELS,number
-                interval=f' — IC95% {number(effect.ci95[0],3)} a {number(effect.ci95[1],3)}' if effect.ci95 else ' — IC indisponível'
-                st.caption(f'{EFFECT_LABELS.get(name,name)}: {number(effect.value,3)}{interval}')
+            from ..presentation import term_definition
+            st.write(term_definition('p'))
+            st.write(term_definition('DP'))
+            st.write(term_definition('n'))
+        for comparison in document.comparisons:
+            st.subheader(comparison.title)
+            st.caption(comparison.family_label)
+            st.write(comparison.reading)
+            with st.expander('Medidas e método',expanded=False):
+                st.write(comparison.method_label+'. '+comparison.method_explanation)
+                for estimate in comparison.estimates:st.write(estimate)
+            for warning in comparison.warnings:st.info(warning)
         render_charts(state)
     with tables:
         titles=('Características sociodemográficas','Características clínicas','Instrumentos de avaliação')
@@ -252,7 +253,8 @@ def render_results(state,manager):
         for frame in state.artifacts.tables.bivariate:st.dataframe(frame,hide_index=True,width='stretch')
     with details:
         for analysis in state.artifacts.results:
-            with st.expander(f'{analysis.spec.outcome} × {analysis.spec.predictor}: método, pressupostos e avisos'):
+            from ..presentation import field_title
+            with st.expander(f'{field_title(analysis.spec.outcome,state.profile)} e {field_title(analysis.spec.predictor,state.profile)}: detalhes técnicos'):
                 st.write('Família: '+FAMILIES[analysis.spec.family])
                 st.write(f'n efetivo: {analysis.result.n_effective}. Ausentes: {analysis.result.n_missing}. Tipo do p: {analysis.result.p_kind}.')
                 for line in analysis.result.assumptions:st.write(line)
@@ -269,7 +271,7 @@ def render_exports(state,manager):
     manager._check(state.session,state.job)
     with card('download_card'):
         st.caption('Escolha o formato. O pacote completo reúne todos os arquivos.')
-        labels={'zip':'Todos os arquivos (ZIP)','docx':'Relatório acadêmico (Word)','pdf':'Relatório acadêmico (PDF)','tables':'Tabelas (Excel)','xlsx':'Banco para Epi Info (Excel)','csv':'Banco para Epi Info (CSV)','dictionary':'Dicionário de variáveis','manifest':'Manifesto da análise','audit':'Auditoria das alterações'}
+        labels={'zip':'Todos os arquivos (ZIP)','docx':'Relatório completo (Word)','pdf':'Relatório completo (PDF)','tables':'Tabelas (Excel)','xlsx':'Banco para Epi Info (Excel)','csv':'Banco para Epi Info (CSV)','dictionary':'Dicionário de variáveis','manifest':'Manifesto da análise','audit':'Auditoria das alterações'}
         key=st.selectbox('Arquivo para baixar',list(labels),format_func=labels.get)
 
         if st.button('Preparar download',type='secondary' if state.download_key else 'primary',key='prepare_download'):state.download_key=key

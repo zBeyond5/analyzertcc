@@ -18,6 +18,17 @@ def test_pipeline_demo_outputs(source_path,tmp_path):
         result=run_pipeline(manager=m,session=s,job=j,source_path=path,prepared=prepared,profile=p,options=RunOptions(default_comparisons(),fictitious=True))
         assert {'docx','pdf','tables','csv','xlsx','dictionary','manifest','audit','zip'}==set(result.files)
         assert len(result.results)==3
+        assert result.presentation is not None
+        assert len(result.presentation.comparisons)==3
+        assert result.metadata['presentation_version']=='readable-reports-v1'
+        import pandas as pd
+        from pypdf import PdfReader
+        sheets=pd.read_excel(result.files['tables'],sheet_name=None)
+        assert 'Glossário' in sheets
+        assert 'PSQI_G' not in str(sheets['Bivariada 1'].values)
+        assert 'Nome para leitura' in pd.read_excel(result.files['dictionary']).columns
+        reader=PdfReader(result.files['pdf'])
+        assert sum(len(page.images) for page in reader.pages)>=2
         assert result.results[0].result.n_effective==30
         assert any('n=4' in text for text in result.results[0].result.assumptions)
         assert any('primeiro menos segundo' in text for text in result.results[0].result.assumptions)

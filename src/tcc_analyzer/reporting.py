@@ -58,11 +58,11 @@ def build_tables(results,summaries,profile,*,data=None):
             effect.append(text)
         interpretation=interpret_p(r.p_value,p_kind=r.p_kind)
         method=METHOD_LABELS.get(r.method,r.method)
-        rows.append([f'{s.outcome} × {s.predictor}',r.n_effective,method,interpretation['p_display'],LABELS[interpretation['status']],'; '.join(effect) or 'Sem estimativa global'])
+        rows.append([f'{field_title(s.outcome,profile)} e {field_title(s.predictor,profile)}',r.n_effective,method,interpretation['p_display'],LABELS[interpretation['status']],'; '.join(effect) or 'Sem estimativa global'])
         narrative.append(f"{s.outcome} e {s.predictor}: análise {FAMILY_LABELS.get(s.family,s.family)}, {method}, n={r.n_effective}, p={interpretation['p_display']}. {LABELS[interpretation['status']]}. {interpretation['explanation']}")
         warnings=[text.replace('zero_cell_no_automatic_correction','Célula zero: nenhuma correção automática aplicada') for text in r.warnings]
         notes.append(f'{s.outcome} × {s.predictor}: ausentes={r.n_missing}; p {P_LABELS.get(r.p_kind,r.p_kind)}; pressupostos: '+', '.join(r.assumptions)+'; avisos: '+(', '.join(warnings) or 'nenhum adicional'))
-    if rows:bivariate.append(pd.DataFrame(rows,columns=['Comparação','n','Método','p','Interpretação','Estimativa / IC95%']))
+    if rows:bivariate.append(pd.DataFrame(rows,columns=['Comparação','Participantes','Método','Valor de p','Interpretação','Estimativa / intervalo de confiança de 95%']))
     return ReportTables(tuple(frames),tuple(bivariate),tuple(notes),tuple(narrative))
 
 

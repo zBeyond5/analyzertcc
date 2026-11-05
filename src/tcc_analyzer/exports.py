@@ -52,6 +52,8 @@ def export_dictionary(profile,output):
     frame=dictionary_frame(profile)
     frame.loc[frame.Campo=='ID','Rótulo']='ID sequencial por execução; vínculo com entrada não exportado'
     frame.loc[len(frame)]={'Campo':'ZARIT_CLASS','Rótulo':'Faixas de Zarit','Tipo':'categorical','Códigos':'1, 2, 3, 4','Legenda':'1: 0–20; 2: 21–40; 3: 41–60; 4: 61–88','Confirmação':'confirmed','Exportar':True}
+    from .presentation import field_title
+    frame['Nome para leitura']=[field_title(code,profile) for code in frame.Campo]
     return write_xlsx({'Dicionario':frame},output)
 
 def write_audit(transformations,profile,output):

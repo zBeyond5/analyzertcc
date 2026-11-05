@@ -170,6 +170,7 @@ class RunArtifacts:
     tables: ReportTables
     results: tuple
     metadata: dict
+    presentation: object | None = None
 
 @dataclass
 class AnalysisPopulation:
