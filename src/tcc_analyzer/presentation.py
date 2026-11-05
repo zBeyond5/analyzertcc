@@ -1,6 +1,10 @@
 """Portuguese reading vocabulary; analytical field names and values stay intact."""
 from functools import lru_cache
+from dataclasses import dataclass
 import math
+import numpy as np
+import pandas as pd
+from .interpretation import interpret_p
 from .profiles import ALIASES, load_profile, load_updated_profile
 
 FIELD_TITLES={
@@ -102,3 +106,136 @@ def readable_number(value,digits=1):
     if value is None:return 'Não disponível'
     try:return f'{float(value):.{digits}f}'.replace('.',',') if math.isfinite(float(value)) else 'Não disponível'
     except (TypeError,ValueError):return 'Não disponível'
+
+
+@dataclass(frozen=True)
+class ReportComparison:
+    id: str
+    title: str
+    family_label: str
+    n_effective: int
+    n_missing: int
+    method_label: str
+    method_explanation: str
+    p_display: str
+    interpretation: str
+    estimates: tuple[str,...]
+    reading: str
+    warnings: tuple[str,...]
+    technical_notes: tuple[str,...]
+
+
+@dataclass(frozen=True)
+class ReportDocument:
+    title: str
+    summary: tuple[str,...]
+    comparisons: tuple[ReportComparison,...]
+    glossary: dict[str,str]
+    limitations: tuple[str,...]
+    technical_notes: tuple[str,...]
+
+
+def complete_pairs(data,spec):
+    fields=[spec.outcome,spec.predictor]
+    return data.reindex(columns=fields).replace('',np.nan).dropna()
+
+
+def _unavailable_reason(result,pair,categorical):
+    messages=' '.join(result.warnings).casefold()
+    if not len(pair):return 'Não há respostas completas para esta comparação.'
+    if 'esparsa' in messages:return 'Há poucas participantes em algumas categorias para aplicar este teste com segurança; apresentamos as quantidades e os percentuais.'
+    if 'variância nula' in messages:return 'As respostas de um grupo não variaram; este método não calculou significância.'
+    if any(pair[c].nunique()<2 for c in pair):return 'Uma das variáveis apresenta apenas um valor ou categoria; não é possível avaliar associação por este método.'
+    if len(pair)<3:return 'São necessárias ao menos três participantes com respostas completas para avaliar esta associação.'
+    if categorical and pair.groupby(categorical[0],observed=True).size().min()<2:return 'Um dos grupos tem menos de duas participantes; apresentamos apenas a descrição.'
+    return 'O método não forneceu um teste válido para estes dados. Apresentamos a descrição; os detalhes técnicos estão no relatório completo.'
+
+
+def _warnings(result):
+    messages=[]
+    for warning in result.warnings:
+        if warning=='zero_cell_no_automatic_correction':messages.append('Uma combinação de categorias não teve participantes. Nenhuma correção automática foi aplicada; algumas estimativas ou intervalos podem estar indisponíveis.')
+        elif 'assintótico' in warning:messages.append('O valor de p usa uma aproximação estatística; não é um cálculo exato.')
+        elif 'Kruskal' in warning:messages.append('Há grupo com menos de cinco participantes; a aproximação deste teste exige cautela.')
+    return tuple(dict.fromkeys(messages))
+
+
+def build_document(results,tables,profile,data,metadata):
+    kinds={v.name:v.kind for v in profile.variables};kinds['ZARIT_CLASS']='categorical'
+    comparisons=[]
+    for analysis in results:
+        spec,r=analysis.spec,analysis.result
+        pair=complete_pairs(data,spec)
+        categorical=[c for c in pair if kinds.get(c)=='categorical']
+        order=spec.group_order or (tuple(sorted(pair[categorical[0]].unique())) if categorical else ())
+        group_names=tuple(category_title(categorical[0],g,profile) for g in order) if categorical else ()
+        answer=interpret_p(r.p_value,p_kind=r.p_kind)
+        valid=answer['status']!='unavailable'
+        status={'significant':'Associação estatisticamente significativa pelo critério do projeto.',
+                'not_significant':'A comparação não atingiu o critério estatístico do projeto; isso não prova ausência de associação.',
+                'unavailable':'Teste estatístico não calculado.'}[answer['status']]
+        method,explanation=METHOD_DESCRIPTIONS.get(r.method,('Método documentado nos detalhes técnicos','Consulte os detalhes do método utilizado.'))
+        estimates=[];descriptions=[]
+        if len(categorical)==1:
+            group=categorical[0];number=next(c for c in pair if c!=group)
+            for code,name in zip(order,group_names):
+                values=pd.to_numeric(pair.loc[pair[group]==code,number])
+                descriptions.append(f'{name}: {len(values)} participantes; média {readable_number(values.mean())}; mediana {readable_number(values.median())}.')
+        effect_names={'mean_difference':'Diferença entre médias','correlation':'Coeficiente de correlação',
+                      'odds_ratio':'Razão de chances','prevalence_ratio':'Razão de prevalências',
+                      'probability_superiority':'Probabilidade de superioridade','omnibus':'Estimativa global'}
+        for name,effect in r.effects.items():
+            text=f'{effect_names.get(name,"Estimativa")}: {readable_number(effect.value,3)}'
+            if name in ('mean_difference','probability_superiority') and len(group_names)==2:
+                text+=f'; grupos na ordem: {group_names[0]} e {group_names[1]}'
+                if name=='mean_difference':text+='; primeiro menos o segundo'
+                else:text+='; chance de uma resposta do primeiro grupo superar a do segundo, contando metade dos empates'
+            if name in ('odds_ratio','prevalence_ratio'):
+                event=category_title(spec.outcome,spec.event_value,profile)
+                reference=category_title(spec.predictor,spec.group_order[1],profile) if len(spec.group_order)==2 else 'não declarada'
+                exposed=category_title(spec.predictor,spec.group_order[0],profile) if len(spec.group_order)==2 else 'não declarado'
+                text+=f'; evento: {event}; grupo comparado: {exposed}; referência: {reference}'
+            if effect.ci95 and all(math.isfinite(x) for x in effect.ci95):text+=f'; intervalo de confiança de 95%: {readable_number(effect.ci95[0],3)} a {readable_number(effect.ci95[1],3)}'
+            else:text+='; intervalo de confiança não disponível para este método/amostra'
+            estimates.append(text+'.')
+            if name=='correlation' and effect.value is not None and math.isfinite(effect.value):
+                direction='positiva' if effect.value>0 else 'negativa' if effect.value<0 else 'nula'
+                descriptions.append(f'A associação observada entre as pontuações foi {direction}; isso não indica causa.')
+        reading=f'Participaram desta comparação {r.n_effective} pessoas com respostas completas. {status}'
+        if valid:reading+=f' Valor de p: {answer["p_display"]}; critério do projeto: menor que 0,05.'
+        else:reading+=' '+_unavailable_reason(r,pair,categorical)
+        if r.n_missing:reading+=f' {r.n_missing} participantes ficaram fora desta comparação por falta de respostas necessárias.'
+        if descriptions:reading+=' '+' '.join(descriptions)
+        warnings=_warnings(r)
+        unknown=tuple(w for w in r.warnings if not any(t in w for t in ('esparsa','nula','observa','pares','assintótico','Kruskal','zero_cell','categoria')))
+        if unknown:warnings+=('Há uma ressalva adicional do método nos detalhes técnicos do relatório completo.',)
+        comparisons.append(ReportComparison(spec.id,f'{field_title(spec.outcome,profile)} e {field_title(spec.predictor,profile)}',
+            FAMILY_LABELS.get(spec.family,'Outro fator investigado'),r.n_effective,r.n_missing,method,explanation,
+            answer['p_display'] if valid else '',status,tuple(estimates),reading,warnings,tuple(r.assumptions)+tuple(r.warnings)))
+    total=metadata.get('n_source',len(data));included=metadata.get('n_included',len(data))
+    summary=[f'Base de análise: {total} registros na fonte; {included} participantes incluídas; {total-included} excluídas pelos critérios observáveis.',
+             'Cada comparação utiliza apenas respostas completas, sem preencher respostas ausentes. Critérios não observáveis no banco não foram certificados.']
+    origins=metadata.get('score_origins',profile.derived_rules.get('score_origins',{}))
+    for code,label in (('PSQI','Qualidade do sono'),('ZARIT','Sobrecarga')):
+        origin=origins.get(code,'origem não registrada')
+        summary.append(f'{label}: {origin}.')
+    used={'n','p'}
+    if tables.descriptive:used.update(('Média','Mediana','DP','Q1/Q3'))
+    fields={c for a in results for c in (a.spec.outcome,a.spec.predictor)}
+    if fields&{'PSQI','PSQI_G'}:used.add('PSQI')
+    if fields&{'ZARIT','ZARIT_CLASS'}:used.add('Zarit')
+    if any(a.result.effects for a in results):used.add('IC95%')
+    for name,term in (('correlation','Correlação'),('odds_ratio','OR'),('prevalence_ratio','RP')):
+        if any(name in a.result.effects for a in results):used.add(term)
+    glossary={k:v for k,v in TERM_DEFINITIONS.items() if k in used}
+    technical=[f'{v.name}: {field_title(v.name,profile)}' for v in profile.variables if v.kind!='text']
+    technical+=['ZARIT_CLASS: '+field_title('ZARIT_CLASS',profile)]
+    for a in results:
+        technical.append(f'{a.spec.id}: {a.spec.outcome} × {a.spec.predictor}; família {a.spec.family}; método {a.result.method}; tipo de p {a.result.p_kind}.')
+        technical.extend(a.result.assumptions+a.result.warnings)
+    technical.append('As notas de pressupostos descrevem condições do método; não certificam que o desenho do estudo as cumpriu.')
+    limitations=('Estudo transversal: associação não demonstra causa.',
+                 'Valores de p bilaterais sem ajuste por múltiplas comparações. A interpretação exige cautela, especialmente nas análises exploratórias.',
+                 'Significância estatística não determina importância clínica. Resultados não significativos não provam ausência de associação.',
+                 'Análises bivariadas, sem ajuste por confundidores. Categorias e cortes seguem o dicionário efetivamente utilizado.')
+    return ReportDocument('Resultados da análise bivariada',tuple(summary),tuple(comparisons),glossary,limitations,tuple(technical))
