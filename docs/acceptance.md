@@ -91,3 +91,14 @@ Implementado: catálogo materno/infantil agrupado, interpretação estrita de p 
 Verificação final: **166 passed in 93.36s**, incluindo navegador desktop/360px, temas, navegação, relatórios e isolamento. Compilação passou; pip check sem dependências quebradas. Novas regressões cobrem fronteiras de p (inclusive floats adjacentes), método na população elegível, origem mista/informada e questionário incompleto com total informado. DOCX/PDF e banco exportado conferidos por leitura automática. Revisão independente identificou quatro falhas e todas foram corrigidas com regressões.
 
 Não houve nova aprovação científica da responsável, teste externo Hamachi/Epi Info ou publicação no Streamlit Cloud. Welch/métodos e categorias agrupadas continuam exigindo alinhamento metodológico único com o AV3. Nenhuma conclusão causal ou regressão foi acrescentada. Preview local em 127.0.0.1:8503; a coleta ética não é certificada pelo software.
+
+
+## Refinamento visual suave — 2026-11-05
+
+Tema/CSS centralizados no pacote UI; topo clicável e menu lateral mantidos. Importar/Criar usa seletor segmentado nativo, demonstração secundária visível, upload em card e resumo da entrada bruta com percentual de células vazias. Zero permanece resposta e a métrica não modifica o banco nem define exclusões. Download mantém mecanismo privado e ganha destaque quando pronto. CSS integra o pacote distribuível; a ausência do arquivo de estilos não impede chegar ao ZIP.
+
+Validação final: **170 passed in 121.11s**, incluindo navegador real. Compileall passou e pip check não encontrou dependências quebradas. Matriz visual: cinco etapas × claro/escuro ×1366/360px; capturas em test-results/soft-ui (ignoradas no Git). Confirmados alvos de etapa >=44px, ausência de rolagem horizontal, foco por Tab/Shift+Tab e contraste computado >=4,5:1 em títulos, etapa ativa e opções selecionadas. A revisão independente encontrou contraste insuficiente no escuro; corrigido com cores de texto estáticas por tema e regressão de navegador. Dropzone tracejada validada na versão instalada.
+
+Regressões conferem alternância de modo preservando rascunho/dono, retorno entre etapas, atualização e exportação de sentinelas separadas (34/99), downloads data-URL sem /media público, roundtrip do Excel preenchido e execução até o download com CSS ausente. As suítes existentes de parser, critérios AV3, p/estimativas, relatórios e segurança permaneceram verdes. Diff confirma ausência de alterações nos módulos de cálculo, população, parsing, jobs ou exportadores.
+
+Limites desta rodada: não foi realizado novo upload de um arquivo XLS binário válido nem novo aceite de produção Streamlit Cloud/Hamachi/Epi Info. CSV/XLSX, erros e limites seguem testes existentes; não houve instalação de dependências ou publicação. Não se declara auditoria WCAG completa de cada célula/estado desabilitado: foram verificados controles, foco, pares de cores e telas mencionados. Preview local em 127.0.0.1:8504.

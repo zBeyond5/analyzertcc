@@ -19,6 +19,7 @@ from ..reporting import FICTITIOUS,format_p
 from .state import WorkflowState,invalidate_after_change
 from .downloads import build_download_anchor,MIMES
 from .navigation import trusted_demo
+from .components import card,metric_row,input_summary
 
 ROOT=Path(__file__).resolve().parents[3]
 STEPS=('1 · Dados','2 · Conferir','3 · Analisar','4 · Resultados','5 · Baixar')
@@ -53,7 +54,9 @@ def import_bytes(state,manager,payload,filename,sheet=None,options=None,demo=Fal
     invalidate_after_change(state)
 
 def render_import(state,manager):
-    route=st.radio('Como deseja preparar os dados?', ['Importar planilha','Criar planilha'],horizontal=True,key='data_route',label_visibility='collapsed')
+    route=st.segmented_control('Como deseja preparar os dados?', ['Importar planilha','Criar planilha'],default='Importar planilha',required=True,key='data_route',label_visibility='collapsed',width='stretch')
+    if route is None:
+        st.info('Escolha importar uma planilha ou criar uma nova para continuar.');return
     if route=='Criar planilha':
         from .create_sheet import render_create_sheet
         def use(payload,filename):
@@ -72,29 +75,30 @@ def render_import(state,manager):
                 st.markdown(build_download_anchor(content,filename=filename,mime=MIMES['xlsx']),unsafe_allow_html=True)
         render_create_sheet(use,download=download)
         return
-    st.header('Importe sua planilha')
-    uploaded=st.file_uploader('Escolha seu Excel ou CSV',type=['xlsx','xls','csv'],help='Até 20 MB. Seu arquivo original é preservado.')
-    sheet=None;options=None
-    if uploaded:
-        payload=uploaded.getvalue();fmt=inspect_upload(uploaded.name,payload)
-        if fmt in ('.xlsx','.xls'):
-            with pd.ExcelFile(io.BytesIO(payload),engine='openpyxl' if fmt=='.xlsx' else 'xlrd') as book:
-                candidates=[name for name in book.sheet_names if name.casefold() not in ('categorias','perguntas','aviso','metadados')]
-            if len(candidates)==1:sheet=candidates[0]
-            else:sheet=st.selectbox('Qual aba contém as respostas?',candidates)
-        else:
-            with st.expander('Opções do CSV'):
-                enc=st.selectbox('Codificação',['utf-8-sig','utf-8','cp1252','latin-1'])
-                sep=st.selectbox('Separador',[';',',','\t'])
-                dec=st.selectbox('Decimal',[',','.'])
-                options=CsvOptions(enc,sep,dec)
-        if st.button('Continuar',type='primary',key='import'):
-            import_bytes(state,manager,payload,uploaded.name,sheet,options);go(1)
-    with st.expander('Experimentar antes de usar meus dados'):
-        st.caption('Demonstração fictícia, sem resultados de pesquisa.')
-        if st.button('Experimentar dados fictícios',key='demo'):
-            source=ROOT/'tests/fixtures/synthetic_tcc.xlsx'
-            import_bytes(state,manager,source.read_bytes(),source.name,'Banco_EpiInfo',demo=True);go(1)
+    with card('import_card'):
+        st.header('Importe sua planilha')
+        uploaded=st.file_uploader('Escolha seu Excel ou CSV',type=['xlsx','xls','csv'],help='Até 20 MB. Seu arquivo original é preservado.')
+        sheet=None;options=None
+        if uploaded:
+            payload=uploaded.getvalue();fmt=inspect_upload(uploaded.name,payload)
+            if fmt in ('.xlsx','.xls'):
+                with pd.ExcelFile(io.BytesIO(payload),engine='openpyxl' if fmt=='.xlsx' else 'xlrd') as book:
+                    candidates=[name for name in book.sheet_names if name.casefold() not in ('categorias','perguntas','aviso','metadados')]
+                if len(candidates)==1:sheet=candidates[0]
+                else:sheet=st.selectbox('Qual aba contém as respostas?',candidates)
+            else:
+                with st.expander('Opções do CSV'):
+                    enc=st.selectbox('Codificação',['utf-8-sig','utf-8','cp1252','latin-1'])
+                    sep=st.selectbox('Separador',[';',',','\t'])
+                    dec=st.selectbox('Decimal',[',','.'])
+                    options=CsvOptions(enc,sep,dec)
+            if st.button('Continuar',type='primary',key='import'):
+                import_bytes(state,manager,payload,uploaded.name,sheet,options);go(1)
+        with st.container():
+            st.caption('Demonstração fictícia, sem resultados de pesquisa.')
+            if st.button('Experimentar dados fictícios',key='demo'):
+                source=ROOT/'tests/fixtures/synthetic_tcc.xlsx'
+                import_bytes(state,manager,source.read_bytes(),source.name,'Banco_EpiInfo',demo=True);go(1)
 
 
 def refresh_prepared(state,data):
@@ -110,8 +114,10 @@ def render_validation(state,manager):
     actual=[i for i in issues if not(trusted_demo(state) and i.code=='mapping_pending')]
     warnings=[i for i in actual if i.severity!='error']
     actual=[i for i in actual if i.severity=='error']
-    c1,c2,c3=st.columns(3)
-    c1.metric('Participantes',len(df));c2.metric('Perguntas',len(getattr(state.profile,'input_fields',())) or state.imported.meta.column_count);c3.metric('Pendências',len(actual))
+    summary=input_summary(state.imported.raw)
+    metric_row((('Participantes',str(summary['rows']),None),('Campos',str(summary['columns']),None),('Células vazias',f"{summary['empty_percent']:.1f}%".replace('.',','),'Percentual das células do arquivo original; zero é uma resposta. Não determina exclusões.')))
+    with st.expander('Prévia do arquivo original'):
+        st.dataframe(display_frame(state.imported.raw.head(20)),hide_index=True,width='stretch')
     if getattr(state.profile,'confirmation',''):st.caption('Perguntas e categorias reconhecidas na documentação.')
     if actual:
         st.dataframe(pd.DataFrame([{'Linha':i.row_index+1 if i.row_index is not None else 'Todas','Pergunta':next((v.label for v in state.profile.variables if v.name==i.variable),i.variable),'Valor':str(i.raw_value),'Nível':i.severity,'Orientação':i.message_pt} for i in actual]),hide_index=True,width='stretch')
@@ -171,7 +177,8 @@ def render_validation(state,manager):
 def render_comparisons(state,manager):
     if state.prepared is None:st.info('Importe uma planilha para começar.');return
     st.header('O que você quer descobrir?')
-    selected=st.multiselect('Perguntas da pesquisa',list(QUESTIONS),default=['burden'],format_func=QUESTIONS.get,key='research_questions')
+    with card('analysis_questions'):
+        selected=st.multiselect('Perguntas da pesquisa',list(QUESTIONS),default=['burden'],format_func=QUESTIONS.get,key='research_questions')
     groups=question_groups(state.profile)
     for group,label in (('mae','Outros fatores da mãe'),('crianca','Outros fatores da criança')):
         with st.expander(label):
@@ -260,25 +267,21 @@ def render_exports(state,manager):
     st.header('Baixe os arquivos desta execução')
     if state.artifacts is None or not state.reviewed:st.info('Abra os resultados para continuar até o download.');return
     manager._check(state.session,state.job)
-    st.caption('Escolha o formato. O pacote completo reúne todos os arquivos.')
-    labels={'zip':'Todos os arquivos (ZIP)','docx':'Relatório acadêmico (Word)','pdf':'Relatório acadêmico (PDF)','tables':'Tabelas (Excel)','xlsx':'Banco para Epi Info (Excel)','csv':'Banco para Epi Info (CSV)','dictionary':'Dicionário de variáveis','manifest':'Manifesto da análise','audit':'Auditoria das alterações'}
-    key=st.selectbox('Arquivo para baixar',list(labels),format_func=labels.get)
+    with card('download_card'):
+        st.caption('Escolha o formato. O pacote completo reúne todos os arquivos.')
+        labels={'zip':'Todos os arquivos (ZIP)','docx':'Relatório acadêmico (Word)','pdf':'Relatório acadêmico (PDF)','tables':'Tabelas (Excel)','xlsx':'Banco para Epi Info (Excel)','csv':'Banco para Epi Info (CSV)','dictionary':'Dicionário de variáveis','manifest':'Manifesto da análise','audit':'Auditoria das alterações'}
+        key=st.selectbox('Arquivo para baixar',list(labels),format_func=labels.get)
 
-    if st.button('Preparar download',type='primary',key='prepare_download'):state.download_key=key
-    if state.download_key:
-        p=state.artifacts.files[state.download_key];payload=manager.read_artifact(state.session,state.job,state.download_key)
-        st.markdown(build_download_anchor(payload,filename=p.name,mime=MIMES[p.suffix[1:]]),unsafe_allow_html=True)
+        if st.button('Preparar download',type='secondary' if state.download_key else 'primary',key='prepare_download'):state.download_key=key
+        if state.download_key:
+            p=state.artifacts.files[state.download_key];payload=manager.read_artifact(state.session,state.job,state.download_key)
+            st.markdown(build_download_anchor(payload,filename=p.name,mime=MIMES[p.suffix[1:]]),unsafe_allow_html=True)
     st.caption('Arquivos expiram no servidor 60 minutos após a geração. Cópias já baixadas permanecem no seu computador. Recarregar a página pode exigir reprocessamento.')
 
 def main():
     st.set_page_config(page_title='Análise bivariada do TCC',page_icon='📊',layout='centered')
-    st.markdown('''<style>
-    h1{font-weight:600;font-size:2.1rem;letter-spacing:-.035em}
-    h2{font-size:1.45rem;font-weight:550} h3{font-size:1.12rem}
-    .private-download{display:inline-block;background:#216C72;color:white!important;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:600;margin:10px 0;box-shadow:0 4px 14px #216c7218}
-    a:focus-visible,button:focus-visible{outline:3px solid #A57530!important;outline-offset:3px}
-
-    </style>''',unsafe_allow_html=True)
+    from .theme import apply_theme
+    apply_theme()
     if 'workflow' not in st.session_state:st.session_state.workflow=WorkflowState()
     state=st.session_state.workflow
     st.title('Sua pesquisa, com clareza')

@@ -1,0 +1,25 @@
+/* Local presentation only. Colors inherit the active native theme. */
+:root { --research-text: __TEXT__; --research-on-primary: __ON_PRIMARY__; --research-accent: __ACCENT__; --research-radius: 14px; --research-pill: 999px; --research-focus: #A57530; --research-download: #216C72; --research-download-text: #FFFFFF; }
+[data-testid="stMainBlockContainer"] { max-width: 960px; padding-top: 2.5rem; }
+h1 { font-size: 2.1rem; font-weight: 600; letter-spacing: -.035em; }
+h2 { font-size: 1.45rem; font-weight: 550; }
+h3 { font-size: 1.12rem; }
+button, [role="tab"], .private-download { min-height: 44px; }
+a:focus-visible,button:focus-visible,[role="tab"]:focus-visible { outline: 3px solid var(--research-focus) !important; outline-offset: 3px; }
+.st-key-project_stepper button { min-height: 64px; border-radius: var(--research-radius); font-weight: 600; line-height: 1.35; }
+.st-key-import_card, .st-key-analysis_questions, .st-key-download_card { border-radius: var(--research-radius); }
+.st-key-import_card [data-testid="stFileUploaderDropzone"] { border: 1px dashed var(--research-accent); padding: 24px 16px; border-radius: var(--research-radius); }
+.st-key-import_card [data-testid="stFileUploaderDropzone"]:hover { border-style: solid; }
+.private-download { display: inline-flex; align-items: center; background: var(--research-download); color: var(--research-download-text) !important; padding: 12px 20px; border-radius: var(--research-radius); text-decoration: none; font-weight: 600; margin: 8px 0; box-shadow: 0 4px 16px #216C7218; }
+@media (max-width:600px) {
+  [data-testid="stMainBlockContainer"] { padding: 2rem 16px; }
+  h1 { font-size: 1.8rem; }
+  h2 { font-size: 1.35rem; }
+  .st-key-project_stepper button { min-height: 56px; padding: 8px; }
+}
+
+[data-testid="stBaseButton-primary"] { color: var(--research-on-primary) !important; }
+
+/* Selected tags inherit the same accent/foreground pairing as primary buttons. */
+[data-testid="stMultiSelect"] [role="group"] > span > span, [data-testid="stMultiSelect"] [role="group"] > span > button { color: var(--research-on-primary) !important; }
+[data-testid="stCaptionContainer"] { color: var(--research-text) !important; opacity: .8; }

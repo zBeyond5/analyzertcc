@@ -32,3 +32,11 @@ Aplicação local Python 3.12 + Streamlit para o TCC, hospedada em Windows 11 e 
 - Rodar os testes focados primeiro; suíte completa na integração. Não repetir checks já verdes sem nova mudança ou motivo.
 - Registrar separadamente confirmações científicas, testes automatizados e aceites reais Windows/Hamachi/Epi Info. Não declarar compatibilidade ou isolamento externo sem a prova correspondente.
 - Responder brevemente com o que mudou, verificação e pendências concretas. Não expandir o escopo sem necessidade.
+
+
+## Apresentação
+
+- Tema nativo nos configs local/cloud; CSS estático somente em `src/tcc_analyzer/ui/styles.css`, via `theme.apply_theme()` uma vez na entrada comum.
+- Não usar seletores hasheados ou dados do upload em HTML/CSS. Preferir widgets nativos e estilos escopados por chaves próprias; validar seletores data-testid na versão usada.
+- Preservar topo clicável, tema claro/escuro, contraste de texto >=4,5:1, foco visível e toque >=44px; 360px sem rolagem horizontal.
+- Mudanças visuais não alteram núcleo estatístico, parser, população ou exportadores. Nenhuma dependência/serviço novo para decoração; propor antes se houver necessidade funcional.

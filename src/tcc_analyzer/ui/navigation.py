@@ -44,24 +44,6 @@ def render_navigation(state,steps):
                       type='primary' if index==current else 'tertiary',
                       disabled=not available[index],on_click=_select,args=(step,))
 
-    st.markdown('''<style>
-    .st-key-project_stepper button{min-height:4.1rem;border-radius:.8rem;font-weight:600;line-height:1.35}
-    .st-key-project_stepper button:focus-visible{outline:3px solid #A57530;outline-offset:3px}
-    .research-progress{height:3px;border-radius:3px;background:rgba(100,130,140,.16);margin:0 0 1rem}
-    .research-progress span{display:block;height:100%;border-radius:inherit;background:#38888A}
-    @media(max-width:600px){.st-key-project_stepper button{padding:.6rem .12rem;font-size:.75rem;min-height:3.6rem}}
-    </style>''',unsafe_allow_html=True)
-    names=[step.split(' · ',1)[-1] for step in steps]
-    following=f' · Próximo: {names[current+1]}' if current<len(steps)-1 else ''
-    st.caption(f'Etapa atual: {current+1} de {len(steps)} · {names[current]}{following}')
-    with st.container(key='project_stepper',horizontal=True,gap='small'):
-        for index,step in enumerate(steps):
-            is_done=completed[index] and index!=current
-            label=('✓ ' if is_done else '')+steps[index]
-            help_text='Etapa atual' if index==current else 'Etapa concluída. Você pode voltar.' if is_done else 'Próxima etapa' if available[index] else 'Conclua as etapas anteriores para abrir.'
-            st.button(label,key=f'nav_top_{index}',width=124,
-                          type='primary' if index==current else 'secondary',
-                          disabled=not available[index],help=help_text,
-                          on_click=_select,args=(steps[index],))
-    st.markdown(f'<div class="research-progress" aria-hidden="true"><span style="width:{100*current/(len(steps)-1):.1f}%"></span></div>',unsafe_allow_html=True)
+    from .components import stepper
+    stepper(current,steps,available,completed,_select)
     return selected

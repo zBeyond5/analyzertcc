@@ -7,7 +7,7 @@ from playwright.sync_api import sync_playwright,expect
 
 def test_two_browsers_full_workflow(tmp_path):
     root=Path(__file__).resolve().parents[1]
-    evidence=root/'test-results/interface';evidence.mkdir(parents=True,exist_ok=True)
+    evidence=root/'test-results/soft-ui';evidence.mkdir(parents=True,exist_ok=True)
     candidates=list((Path.home()/'.agent-browser/browsers').glob('chrome-*/chrome.exe'))
     with socket.socket() as sock:
         sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
@@ -37,7 +37,8 @@ def test_two_browsers_full_workflow(tmp_path):
                 expect(step(page,4,'Resultados')).to_be_disabled()
                 expect(step(page,5,'Baixar')).to_be_disabled()
                 assert not page.get_by_role('heading',name='Análise do TCC',exact=True).count()
-                page.get_by_text('Experimentar antes de usar meus dados',exact=True).click();page.get_by_role('button',name='Experimentar dados fictícios').click()
+                expect(page.get_by_role('button',name='Experimentar dados fictícios')).to_be_visible()
+                page.get_by_role('button',name='Experimentar dados fictícios').click()
                 expect(page.get_by_role('heading',name='Confira os dados antes de analisar')).to_be_visible()
                 if changed:
                     page.get_by_text('Corrigir um valor com registro e possibilidade de desfazer',exact=True).click()
@@ -127,6 +128,45 @@ def test_two_browsers_full_workflow(tmp_path):
             job=next(p for p in (tmp_path/'jobs').iterdir() if p.is_dir())
             attempt=contexts[1].request.get(url+'/runtime/jobs/'+job.name+'/resultado_completo.zip')
             assert not attempt.body().startswith(b'PK')
+            # Visual acceptance matrix: all five steps, two themes and two widths.
+            import math
+            def contrast(page,selector):
+                return page.locator(selector).first.evaluate(r"""el => {
+                    const rgba=s=>(s.match(/[\d.]+/g)||[]).map(Number);
+                    const fg=rgba(getComputedStyle(el).color);
+                    let bg=[255,255,255,1],node=el;
+                    while(node){const c=rgba(getComputedStyle(node).backgroundColor);if(c.length>=3&&(c[3]??1)>0.99){bg=c;break;}node=node.parentElement;}
+                    const alpha=fg[3]??1;
+                    const color=fg.slice(0,3).map((c,i)=>alpha*c+(1-alpha)*bg[i]);
+                    const lum=c=>c.slice(0,3).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4}).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
+                    const a=lum(color),b=lum(bg);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+                }""")
+            for mode in ('Light','Dark'):
+                first.get_by_test_id('stMainMenu').click()
+                first.get_by_role('menuitemradio',name=mode,exact=True).click();first.keyboard.press('Escape')
+                for width in (1366,360):
+                    first.set_viewport_size({'width':width,'height':900})
+                    for number,label in enumerate(('Dados','Conferir','Analisar','Resultados','Baixar'),1):
+                        step(first,number,label).click()
+                        expect(first.get_by_text(re.compile(rf'Etapa atual: {number} de 5'))).to_be_visible()
+                        assert first.evaluate('document.documentElement.scrollWidth <= window.innerWidth+2')
+                        for n,name in enumerate(('Dados','Conferir','Analisar','Resultados','Baixar'),1):
+                            button=step(first,n,name)
+                            expect(button).to_be_visible()
+                            box=button.bounding_box()
+                            assert box and box['width']>=44 and box['height']>=44
+                        active=step(first,number,label)
+                        active.focus();first.keyboard.press('Tab');first.keyboard.press('Shift+Tab')
+                        assert active.evaluate('(el)=>getComputedStyle(el).outlineStyle')!='none'
+                        assert contrast(first,'h1')>=4.5
+                        assert contrast(first,'.st-key-project_stepper button[kind="primary"]')>=4.5
+                        if number==1:
+                            dropzone=first.get_by_test_id('stFileUploaderDropzone')
+                            assert dropzone.evaluate('(el)=>getComputedStyle(el).borderTopStyle') in ('dashed','solid')
+                        if number==3:
+                            assert contrast(first,'.st-key-analysis_questions [role="group"] > span > span')>=4.5
+                        first.screenshot(path=str(evidence/f'{mode.lower()}-{width}-step{number}.png'),full_page=True)
+            first.set_viewport_size({'width':1366,'height':900})
             # Reconfigurar deve invalidar o relatório já revisado.
             step(first,3,'Analisar').click()
             expect(first.get_by_role('heading',name='O que você quer descobrir?')).to_be_visible()
@@ -150,6 +190,10 @@ def test_two_browsers_full_workflow(tmp_path):
             expect(creator.get_by_text('Pergunta 1 de 68',exact=True)).to_be_visible()
             creator.get_by_role('spinbutton').fill('35')
             creator.get_by_role('button',name='Próxima',exact=True).click()
+            expect(creator.get_by_text('Pergunta 2 de 68',exact=True)).to_be_visible()
+            creator.get_by_text('Importar planilha',exact=True).click()
+            expect(creator.get_by_role('heading',name='Importe sua planilha')).to_be_visible()
+            creator.get_by_text('Criar planilha',exact=True).click()
             expect(creator.get_by_text('Pergunta 2 de 68',exact=True)).to_be_visible()
             creator.get_by_text('Com companheiro',exact=True).click()
             creator.get_by_role('button',name='Próxima',exact=True).click()

@@ -20,6 +20,8 @@ Abra **http://127.0.0.1:8501**. O servidor local escuta somente no computador an
 4. **Analisar** apresenta perguntas de pesquisa, com métodos definidos pelo programa.
 5. **Resultados → Baixar** entrega Word, PDF, tabelas e pacote ZIP privado.
 
+Em Dados, escolha **Importar planilha** ou **Criar planilha** no seletor. Na conferência, o resumo mostra participantes, campos e células vazias do arquivo original; a prévia fica recolhida. Zero não conta como vazio.
+
 Use o passo a passo no topo ou as abas do projeto à esquerda para navegar. Etapas concluídas mostram ✓ e permitem voltar; modificar respostas invalida os resultados dependentes. Em Resultados, as abas Resumo/Tabelas/Detalhes incluem gráficos interativos com os mesmos dados da análise.
 
 Para alternar claro/escuro/sistema, abra o menu **⋮ → Light (claro) / Dark (escuro) / System (sistema)**. A escolha é nativa do navegador e não apaga respostas.

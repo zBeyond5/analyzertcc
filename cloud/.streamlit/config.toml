@@ -16,8 +16,8 @@ toolbarMode = "viewer"
 
 [theme]
 font = "sans serif"
-baseRadius = "0.65rem"
-buttonRadius = "0.65rem"
+baseRadius = "0.875rem"
+buttonRadius = "0.875rem"
 
 [theme.light]
 primaryColor = "#216C72"
@@ -27,8 +27,8 @@ textColor = "#203B43"
 borderColor = "#D7E2E3"
 
 [theme.dark]
-primaryColor = "#88CDD0"
-backgroundColor = "#141F29"
-secondaryBackgroundColor = "#20313D"
-textColor = "#EBF2F4"
+primaryColor = "#86CDD1"
+backgroundColor = "#0F1B24"
+secondaryBackgroundColor = "#17262F"
+textColor = "#E8F1F2"
 borderColor = "#49616C"
