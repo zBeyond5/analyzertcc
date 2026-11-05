@@ -9,12 +9,12 @@ from ..models import DomainError,CsvOptions,Transformation,ComparisonSpec,Import
 from ..profiles import load_profile,dictionary_frame,confirm_codebook
 from ..importers import inspect_upload,load_table
 from ..jobs import get_manager
-from ..validation import prepare_dataset,validate_dataset
+from ..validation import prepare_dataset,validate_dataset,analysis_validation_issues
 from ..scales import compare_recorded_scores,score_zarit
 from ..transformations import apply_changes,undo_changes
 from ..statistics.selection import default_comparisons,recommend_test
 from ..pipeline import RunOptions,run_pipeline
-from ..analysis_plan import QUESTIONS,build_default_plan
+from ..analysis_plan import QUESTIONS,build_default_plan,question_groups
 from ..reporting import FICTITIOUS,format_p
 from .state import WorkflowState,invalidate_after_change
 from .downloads import build_download_anchor,MIMES
@@ -106,7 +106,7 @@ def refresh_prepared(state,data):
 def render_validation(state,manager):
     if state.prepared is None:st.info('Importe um banco para visualizar as validações.');return
     st.header('Confira os dados antes de analisar')
-    df=state.prepared.data;issues=validate_dataset(df,state.profile).issues+tuple(i for i in state.prepared.validation.issues if i.code=='metadata')
+    df=state.prepared.data;issues=analysis_validation_issues(state.prepared,state.profile)
     actual=[i for i in issues if not(trusted_demo(state) and i.code=='mapping_pending')]
     warnings=[i for i in actual if i.severity!='error']
     actual=[i for i in actual if i.severity=='error']
@@ -172,23 +172,40 @@ def render_comparisons(state,manager):
     if state.prepared is None:st.info('Importe uma planilha para começar.');return
     st.header('O que você quer descobrir?')
     selected=st.multiselect('Perguntas da pesquisa',list(QUESTIONS),default=['burden'],format_func=QUESTIONS.get,key='research_questions')
-    configured=build_default_plan(state.prepared.data,state.profile,selected)
+    groups=question_groups(state.profile)
+    for group,label in (('mae','Outros fatores da mãe'),('crianca','Outros fatores da criança')):
+        with st.expander(label):
+            options={k:v for k,v in groups[group].items() if k not in QUESTIONS and build_default_plan(state.prepared.data,state.profile,(k,))}
+            selected+=st.multiselect('Fatores para comparar com o sono',list(options),format_func=options.get,key='factors_'+group)
+    from ..analysis_population import select_population,population_signature,REASONS
+    population=select_population(state.prepared.data,state.profile)
+    signature=population_signature(state.prepared,state.profile,population)
+    if population.excluded:
+        st.info(f'{len(population.data)} de {len(state.prepared.data)} participantes atendem aos critérios observáveis do projeto. O banco original será preservado.')
+        with st.expander('Por que algumas participantes não entram?'):
+            for code,label in REASONS.items():
+                count=sum(code in e['reasons'] for e in population.excluded)
+                if count:st.write(f'{label}: {count}')
+    if population.data.empty:st.info('Complete os questionários para ter participantes elegíveis para análise.')
+    configured=build_default_plan(population.data,state.profile,selected)
     with st.expander('Como a análise será feita'):
         st.caption('Métodos definidos para cada pergunta. Pares completos, sem preencher respostas ausentes. Associação não comprova causa.')
         for c in configured:
-            rec=recommend_test(state.prepared.data,c,state.profile)
+            rec=recommend_test(population.data,c,state.profile)
             st.write(f'{c.outcome} × {c.predictor}: {METHOD_NAMES.get(c.method if c.method!="auto" else rec.method,rec.method)}')
             st.caption(' '.join(rec.reasons))
     if state.options and state.options.comparisons!=configured:
         invalidate_after_change(state);state.options=None;st.rerun()
     if not configured:st.info('Escolha uma pergunta com respostas disponíveis para analisar.')
-    if st.button('Analisar dados',type='primary',disabled=not configured,key='run_analysis'):
+    run_label=f'Analisar {len(population.data)} participantes elegíveis' if population.excluded else 'Analisar dados'
+    if st.button(run_label,type='primary',disabled=not configured or population.data.empty,key='run_analysis'):
+        state.population_ack_signature=signature
         if state.job.status not in ('created','uploaded'):
             manager._check(state.session,state.job)
             payload=state.job.source_path.read_bytes();old=state.job
             state.job=manager.create_job(state.session)
             manager.store_upload(state.session,state.job,'dados'+old.source_path.suffix,payload)
-        state.options=RunOptions(configured,fictitious=state.fictitious)
+        state.options=RunOptions(configured,fictitious=state.fictitious,population_policy=population.policy,population_ack_signature=state.population_ack_signature)
         with st.status('Preparando seus resultados',expanded=False) as status:
             state.artifacts=run_pipeline(manager=manager,session=state.session,job=state.job,source_path=state.job.source_path,prepared=state.prepared,profile=state.profile,options=state.options,progress=lambda text:status.update(label=text))
             status.update(label='Resultados prontos',state='complete')
@@ -202,6 +219,23 @@ def render_results(state,manager):
     summary,tables,details=st.tabs(['Resumo','Tabelas','Detalhes'])
     with summary:
         from .charts import render_charts
+        from ..interpretation import interpret_p,LABELS
+        with st.expander('Como ler o valor de p'):
+            st.write('O projeto usa p < 0,05. Desvio padrão mostra a variação das respostas; p avalia a comparação estatística. Significância não demonstra causa nem importância prática.')
+        for analysis in state.artifacts.results:
+            result=analysis.result;answer=interpret_p(result.p_value,p_kind=result.p_kind)
+            labels={v.name:v.label for v in state.profile.variables}
+            title=f'{labels.get(analysis.spec.outcome,analysis.spec.outcome)} × {labels.get(analysis.spec.predictor,analysis.spec.predictor)}'
+            st.subheader(title)
+            st.write(f"**{LABELS[answer['status']]}** · p = {answer['p_display']}")
+            st.caption(f'{METHOD_NAMES.get(result.method,result.method)} · {result.n_effective} pares completos · {result.n_missing} ausentes')
+            st.write(answer['explanation'])
+            if answer['status']=='unavailable':
+                for warning in result.warnings:st.caption(warning)
+            for name,effect in result.effects.items():
+                from ..reporting import EFFECT_LABELS,number
+                interval=f' — IC95% {number(effect.ci95[0],3)} a {number(effect.ci95[1],3)}' if effect.ci95 else ' — IC indisponível'
+                st.caption(f'{EFFECT_LABELS.get(name,name)}: {number(effect.value,3)}{interval}')
         render_charts(state)
     with tables:
         titles=('Características sociodemográficas','Características clínicas','Instrumentos de avaliação')

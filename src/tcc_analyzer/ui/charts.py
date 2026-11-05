@@ -90,7 +90,9 @@ def build_figures(data,profile,comparisons):
 def render_charts(state):
     import streamlit as st
     if state.artifacts is None or state.prepared is None:return
-    views=build_figures(state.prepared.data,state.profile,tuple(result.spec for result in state.artifacts.results))
+    from ..analysis_population import select_population
+    population=select_population(state.prepared.data,state.profile)
+    views=build_figures(population.data,state.profile,tuple(result.spec for result in state.artifacts.results))
     if not views:
         st.info('Não há pares completos para desenhar os gráficos desta análise. As tabelas continuam disponíveis.')
         return

@@ -2,6 +2,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 import pandas as pd
 from .models import ReportTables
+from .interpretation import interpret_p,LABELS
 
 FICTITIOUS='Dados fictícios para teste; não representam resultados da pesquisa.'
 MULTIPLICITY='Valores de p bilaterais sem ajuste; análises exploratórias estão sujeitas à multiplicidade. Associações não demonstram causalidade.'
@@ -14,8 +15,9 @@ def number(v,digits=1):
     return '' if v is None or pd.isna(v) else f'{float(v):.{digits}f}'.replace('.',',')
 
 def format_p(value):
-    if value is None or pd.isna(value):return 'Não calculado'
-    return '<0,001' if value<.001 else number(value,3)
+    from .interpretation import interpret_p
+    return interpret_p(value,p_kind='reported')['p_display']
+
 
 def build_tables(results,summaries,profile,*,data=None):
     variables={v.name:v for v in profile.variables};frames=[]
@@ -40,7 +42,12 @@ def build_tables(results,summaries,profile,*,data=None):
             frames.append(pd.DataFrame(rows,columns=['Variável','Medida / categoria','n','Resultado']))
     else:
         for _ in groups:frames.append(pd.DataFrame(columns=['Variável','Medida / categoria','n','Resultado']))
-    bivariate=[];narrative=[];notes=[MULTIPLICITY,'Percentuais por respostas válidas da variável; terapias múltiplas usam o total de participantes, com ausentes indicados separadamente.','PSQI informado: recálculo dos componentes pendente de confirmação do manual.']
+    bivariate=[];narrative=[];notes=[MULTIPLICITY,'Percentuais por respostas válidas da variável; terapias múltiplas usam o total de participantes, com ausentes indicados separadamente.','Critério do projeto: p < 0,05, por comparação; o p não mede a importância prática.']
+    origin=profile.derived_rules.get('score_origins',{})
+    for instrument in ('PSQI','ZARIT'):
+        source=origin.get(instrument,'calculado a partir das respostas' if profile.instrument_mode=='responses' else 'informado no banco')
+        notes.append(f'{instrument}: {source}.')
+    if profile.instrument_mode=='responses':notes.append('Modelo do banco atualizado: renda, escolaridade e estado civil agrupados diferem do Apêndice II. Não foram reconstruídas categorias detalhadas. Critérios não observáveis de elegibilidade não foram certificados.')
     rows=[]
     for analysis in results:
         s=analysis.spec;r=analysis.result;effect=[]
@@ -48,12 +55,13 @@ def build_tables(results,summaries,profile,*,data=None):
             text=f'{EFFECT_LABELS.get(name,name)}: {number(e.value,3)}'
             text+=f' [{number(e.ci95[0],3)}; {number(e.ci95[1],3)}]' if e.ci95 else ' (IC não disponível: '+str(e.unavailable_reason or 'método/amostra insuficiente')+')'
             effect.append(text)
+        interpretation=interpret_p(r.p_value,p_kind=r.p_kind)
         method=METHOD_LABELS.get(r.method,r.method)
-        rows.append([f'{s.outcome} × {s.predictor}',r.n_effective,method,format_p(r.p_value),'; '.join(effect) or 'Sem estimativa global'])
-        narrative.append(f'{s.outcome} e {s.predictor}: análise {FAMILY_LABELS.get(s.family,s.family)}, {method}, n={r.n_effective}, p={format_p(r.p_value)}. '+('Não foi calculada inferência para esta comparação.' if r.p_value is None else 'A comparação descreve associação, sem estabelecer causalidade.'))
+        rows.append([f'{s.outcome} × {s.predictor}',r.n_effective,method,interpretation['p_display'],LABELS[interpretation['status']],'; '.join(effect) or 'Sem estimativa global'])
+        narrative.append(f"{s.outcome} e {s.predictor}: análise {FAMILY_LABELS.get(s.family,s.family)}, {method}, n={r.n_effective}, p={interpretation['p_display']}. {LABELS[interpretation['status']]}. {interpretation['explanation']}")
         warnings=[text.replace('zero_cell_no_automatic_correction','Célula zero: nenhuma correção automática aplicada') for text in r.warnings]
         notes.append(f'{s.outcome} × {s.predictor}: ausentes={r.n_missing}; p {P_LABELS.get(r.p_kind,r.p_kind)}; pressupostos: '+', '.join(r.assumptions)+'; avisos: '+(', '.join(warnings) or 'nenhum adicional'))
-    if rows:bivariate.append(pd.DataFrame(rows,columns=['Comparação','n','Método','p','Estimativa / IC95%']))
+    if rows:bivariate.append(pd.DataFrame(rows,columns=['Comparação','n','Método','p','Interpretação','Estimativa / IC95%']))
     return ReportTables(tuple(frames),tuple(bivariate),tuple(notes),tuple(narrative))
 
 def render_docx(tables,metadata,output):

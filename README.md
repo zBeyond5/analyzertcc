@@ -58,3 +58,8 @@ Dados de entrada não são sobrescritos. Texto livre fica fora das exportações
 ## Validação
 
 Resultados e limites: [docs/acceptance.md](docs/acceptance.md). Métodos: [docs/methods.md](docs/methods.md). Importação Epi Info: [docs/epiinfo-import.md](docs/epiinfo-import.md). O aplicativo não depende de Epi Info instalado; a compatibilidade na instalação Windows de destino só é comprovada após teste real.
+
+
+## Análises conforme AV3
+
+Escolha sobrecarga/sono e, se precisar, abra outros fatores da mãe/criança. Cada comparação mostra p, interpretação pelo critério de 5%, método, pares completos e estimativas. p não é desvio padrão nem prova de causa. Se houver questionários incompletos ou participantes fora do critério observável, o aplicativo mostra a contagem e pede confirmação apenas para analisar o grupo elegível; o Excel original continua integral.

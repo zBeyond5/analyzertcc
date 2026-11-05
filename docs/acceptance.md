@@ -82,3 +82,12 @@ O servidor disponibilizado nesta entrega escuta apenas em **127.0.0.1:8501**. A 
 - Revisão independente dos módulos de integração identificou limites numéricos, escores incompletos, denominador de terapias, direção/n dos grupos, edição de códigos e invalidação de resultados; corrigidos e cobertos por testes.
 
 Os números fictícios são referências funcionais e não conclusões científicas. A liberação para dados reais depende das confirmações científicas, éticas e de implantação descritas acima.
+
+
+## AV3 — 2026-11-05
+
+Implementado: catálogo materno/infantil agrupado, interpretação estrita de p <0,05 por comparação, estimativas/IC/n junto do resultado e notas coerentes com a origem efetiva PSQI/Zarit. Legado preservado. Perfil atualizado usa critérios observáveis de idade e instrumentos completos com exclusão contextual confirmada, fonte integral e população única em figuras/tabelas/exportações. Nenhuma exclusão resolve erro de esquema/código.
+
+Verificação final: **166 passed in 93.36s**, incluindo navegador desktop/360px, temas, navegação, relatórios e isolamento. Compilação passou; pip check sem dependências quebradas. Novas regressões cobrem fronteiras de p (inclusive floats adjacentes), método na população elegível, origem mista/informada e questionário incompleto com total informado. DOCX/PDF e banco exportado conferidos por leitura automática. Revisão independente identificou quatro falhas e todas foram corrigidas com regressões.
+
+Não houve nova aprovação científica da responsável, teste externo Hamachi/Epi Info ou publicação no Streamlit Cloud. Welch/métodos e categorias agrupadas continuam exigindo alinhamento metodológico único com o AV3. Nenhuma conclusão causal ou regressão foi acrescentada. Preview local em 127.0.0.1:8503; a coleta ética não é certificada pelo software.

@@ -170,3 +170,10 @@ class RunArtifacts:
     tables: ReportTables
     results: tuple
     metadata: dict
+
+@dataclass
+class AnalysisPopulation:
+    data: pd.DataFrame
+    included_rows: tuple
+    excluded: tuple
+    policy: str

@@ -27,3 +27,14 @@ Fontes: [Pittsburgh, instruções ao final do artigo](https://www.psychiatry.pit
 Testes independentes cobrem totais 0,5,6,21, fronteiras dos componentes, dados ausentes, correções e códigos personalizados. Renumerar uma categoria de instrumento exige manter correspondência com seu significado canônico; significado alterado não produz escore padrão automaticamente. O dicionário é lido do upload, incluindo metadados, e não de frequências observadas. Totais fornecidos não são sobrescritos; escores gerados são atualizados após correções com registro.
 
 Aceite local separado: o banco atualizado fornecido (marcado fictício pelo próprio AVISO) importou 30×69, calculou ambos os instrumentos em 30 respostas completas, sem bloqueios, e gerou os nove artefatos existentes do pipeline. Não representa resultados científicos nem aceite externo do orientador/Epi Info/Hamachi.
+
+
+## Update AV3 de 2026-11-05
+
+Critério estrito p < 0,05, usando valor original. DP descreve dispersão; p não mede tamanho/importância e não demonstra causalidade. Interpretamos cada comparação separadamente, incluindo resultados não significativos e inferência indisponível. Valores que arredondariam para 0,050 recebem precisão suficiente para preservar seu lado do limiar. Alfa por comparação sem ajuste de multiplicidade; análises adicionais são exploratórias.
+
+O catálogo inclui fatores maternos e infantis documentados, mantendo sobrecarga/sono como principal. Welch compara médias; Spearman associa escores; categóricas seguem qui-quadrado/Fisher quando sustentados ou descrição quando esparsas. Não há seletor automático por normalidade nem mudança de teste pelo menor p. Esta formulação efetiva deve ser reconciliada uma vez com a responsável científica frente ao texto genérico do AV3.
+
+Perfil atualizado: idade materna conhecida >=18 e PSQI/Zarit com itens completos e válidos definem os critérios observáveis. Exclusões são mostradas e confirmadas pelo botão contextual, sem apagar a fonte. Erros de códigos/metadados seguem bloqueados. Campos auxiliares vazios não excluem; instrumentos incompletos com totais fornecidos não os tornam completos. Tabelas, gráficos e bancos de resultados usam a mesma população, com pares completos para ausentes em fatores adicionais. Legado preserva sua política explicitada. Não se certificam TCLE, recrutamento ou diagnóstico prévio não observáveis. Categorias agrupadas do banco não são reconstruídas como as categorias detalhadas do Apêndice II.
+
+Origem de PSQI e Zarit é registrada individualmente e no manifesto como informada/calculada/mista; relatórios não repetem a nota antiga de recálculo pendente quando houve cálculo. Fonte e fórmulas dos escores permanecem as anteriores. Não foi incluída regressão múltipla.

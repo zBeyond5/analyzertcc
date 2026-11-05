@@ -61,6 +61,8 @@ def test_two_browsers_full_workflow(tmp_path):
                 assert not page.get_by_text('Conferi independência, distribuição, tamanho dos grupos e o que cada método estima.',exact=True).count()
                 page.get_by_role('button',name='Analisar dados',exact=True).click()
                 expect(page.get_by_role('heading',name='Confira os resultados e o relatório')).to_be_visible(timeout=30000)
+                expect(page.get_by_text('Como ler o valor de p',exact=True)).to_be_visible()
+                assert page.get_by_text(re.compile('Significativa pelo critério de 5%|Não atingiu o critério de 5%|Inferência não disponível')).count() >= 3
                 graph=page.get_by_test_id('stPlotlyChart')
                 expect(graph).to_be_visible()
                 expect(graph.locator('.js-plotly-plot')).to_be_visible()

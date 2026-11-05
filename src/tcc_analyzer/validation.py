@@ -110,3 +110,17 @@ def refresh_generated_scores(prepared,profile):
     if 'ZARIT_CLASS' in df:df['ZARIT_CLASS']=[score_zarit(row,profile).category for _,row in df.iterrows()]
     metadata=tuple(i for i in prepared.validation.issues if i.code=='metadata')
     return PreparedDataset(df,prepared.source_meta,tuple(changes),ValidationReport(validate_dataset(df,profile).issues+metadata))
+
+def analysis_validation_issues(prepared,profile):
+    """Missing instrument responses may be excluded by AV3; invalid answers still block."""
+    issues=validate_dataset(prepared.data,profile).issues+tuple(i for i in prepared.validation.issues if i.code=='metadata')
+    if profile.instrument_mode!='responses':return issues
+    from .scales import ZARIT_FIELDS,PSQI_FREQUENCIES
+    kept=[]
+    for issue in issues:
+        if issue.code=='incomplete_instrument' and issue.row_index is not None:
+            fields=ZARIT_FIELDS if issue.variable=='ZARIT' else PSQI_FREQUENCIES+('H_DEIT','H_LEV','H_SONO','N_MIN')
+            row=prepared.data.loc[issue.row_index]
+            if any(pd.isna(row.get(f)) or row.get(f)=='' for f in fields):continue
+        kept.append(issue)
+    return tuple(kept)

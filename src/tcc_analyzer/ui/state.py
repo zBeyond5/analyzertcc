@@ -14,7 +14,8 @@ class WorkflowState:
     reviewed: bool = False
     download_key: str | None = None
     csv_options: object = None
+    population_ack_signature: str | None = None
 
 def invalidate_after_change(state):
-    state.artifacts=None;state.reviewed=False;state.download_key=None
+    state.population_ack_signature=None;state.artifacts=None;state.reviewed=False;state.download_key=None
     return state

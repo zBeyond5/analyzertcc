@@ -1,6 +1,6 @@
 """Shared, session-local progress for the project menu and its five steps."""
 import streamlit as st
-from ..validation import validate_dataset
+from ..validation import analysis_validation_issues
 
 
 def trusted_demo(state):
@@ -13,8 +13,7 @@ def progress_status(state):
     loaded=state.prepared is not None and len(state.prepared.data)>0
     valid=False
     if loaded:
-        issues=validate_dataset(state.prepared.data,state.profile).issues
-        issues+=tuple(i for i in state.prepared.validation.issues if i.code=='metadata')
+        issues=analysis_validation_issues(state.prepared,state.profile)
         valid=not any(i.severity=='error' and not(trusted_demo(state) and i.code=='mapping_pending') for i in issues)
     analyzed=valid and state.artifacts is not None
     reviewed=analyzed and state.reviewed
