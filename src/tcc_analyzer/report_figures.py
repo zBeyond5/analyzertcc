@@ -90,6 +90,6 @@ def render_figure(chart):
                 ax.legend(loc='upper center',bbox_to_anchor=(.5,-.2),frameon=False,fontsize=9)
             ax.spines[['top','right']].set_visible(False)
             ax.grid(axis='x',alpha=.15);ax.set_axisbelow(True)
-            output=BytesIO();fig.savefig(output,format='png',dpi=145,metadata={'Software':'Análise Bivariada'})
+            output=BytesIO();fig.savefig(output,format='png',dpi=145,bbox_inches='tight',pad_inches=.15,metadata={'Software':'Análise Bivariada'})
             return output.getvalue()
         finally:fig.clear()
