@@ -1,13 +1,10 @@
 """Session-local figures from the same complete pairs used by the statistics."""
 from dataclasses import dataclass
 import html
-import numpy as np
-import pandas as pd
 import plotly.graph_objects as go
 
-PALETTE=('#216C72','#6788B1','#A77C48','#AC7679')
-SHORT_LABELS={'PSQI_G':'Qualidade do sono','PSQI':'Pontuação do sono (PSQI)',
-              'ZARIT':'Sobrecarga (Zarit)','ZARIT_CLASS':'Classificação da sobrecarga'}
+from ..report_figures import PALETTE, build_chart_data
+from ..presentation import field_title
 
 
 @dataclass
@@ -20,70 +17,38 @@ class ChartView:
     summary: str
 
 
-def _label(field,profile):
-    return SHORT_LABELS.get(field,next((v.label for v in profile.variables if v.name==field),field))
-
-
-def _category(field,value,profile):
-    if field=='ZARIT_CLASS':
-        return {1:'0–20',2:'21–40',3:'41–60',4:'61–88'}.get(value,str(value))
-    labels=next((v.labels for v in profile.variables if v.name==field),{})
-    return labels.get(value,f'Código {value:g}' if isinstance(value,(int,float)) else str(value))
-
-
 def build_figures(data,profile,comparisons):
-    """Only selected comparisons; figure payloads never receive identifying columns."""
-    kinds={v.name:v.kind for v in profile.variables};kinds['ZARIT_CLASS']='categorical'
     views=[]
     for spec in comparisons:
-        fields=(spec.outcome,spec.predictor)
-        if not all(field in data for field in fields):continue
-        pair=data[list(fields)].replace('',np.nan).dropna()
-        if pair.empty:continue
-        categorical=[field for field in fields if kinds.get(field)=='categorical']
-        # Escape category wording because Plotly labels may interpret HTML.
-        labels={field:html.escape(_label(field,profile)) for field in fields}
+        chart=build_chart_data(data,profile,spec)
+        if chart is None:continue
         fig=go.Figure()
-        title=f'{_label(spec.predictor,profile)} e {_label(spec.outcome,profile).lower()}'
-        summary=f'{len(pair)} respostas completas; {len(data)-len(pair)} sem par completo.'
-        if len(categorical)==2:
-            groups=sorted(pair[spec.outcome].unique())
-            categories=sorted(pair[spec.predictor].unique())
-            names=[html.escape(_category(spec.outcome,g,profile)) for g in groups]
-            totals=[int((pair[spec.outcome]==g).sum()) for g in groups]
-            for index,category in enumerate(categories):
-                counts=[int(((pair[spec.outcome]==g)&(pair[spec.predictor]==category)).sum()) for g in groups]
-                fig.add_trace(go.Bar(name=html.escape(_category(spec.predictor,category,profile)),
-                    y=names,x=[100*count/total for count,total in zip(counts,totals)],
-                    orientation='h',marker_color=PALETTE[index%len(PALETTE)],
-                    customdata=list(zip(counts,totals)),
+        if chart.kind=='bar':
+            for index,series in enumerate(chart.series):
+                fig.add_trace(go.Bar(name=html.escape(series['name']),y=[html.escape(c) for c in chart.categories],
+                    x=series['percentages'],orientation='h',marker_color=PALETTE[index%len(PALETTE)],
+                    customdata=list(zip(series['counts'],series['totals'])),
                     hovertemplate='%{y}<br>%{x:.1f}% (%{customdata[0]} de %{customdata[1]})<extra>%{fullData.name}</extra>'))
-            fig.update_layout(barmode='stack',xaxis_title='Respostas válidas (%)',yaxis_title=labels[spec.outcome],legend_title_text=labels[spec.predictor])
+            fig.update_layout(barmode='stack')
             fig.update_xaxes(range=[0,100],ticksuffix='%')
-            summary+=' Percentuais com denominador de respostas completas em cada grupo.'
-            if len(groups)==1 or len(categories)==1:summary+=' Há apenas uma categoria observada em uma das variáveis; leitura descritiva.'
-        elif len(categorical)==1:
-            group=categorical[0];number=next(field for field in fields if field!=group)
-            groups=sorted(pair[group].unique())
-            for index,category in enumerate(groups):
-                values=pd.to_numeric(pair.loc[pair[group]==category,number]).tolist()
-                name=html.escape(_category(group,category,profile))
-                fig.add_trace(go.Box(y=values,name=name,marker_color=PALETTE[index%len(PALETTE)],
-                                     boxpoints='outliers',hovertemplate='%{y}<extra>%{fullData.name}</extra>'))
-            fig.update_layout(xaxis_title=labels[group],yaxis_title=labels[number],showlegend=False)
-            summary+=' As caixas mostram a mediana e os 50% centrais das respostas.'
-            if len(groups)==1:summary+=' Há apenas uma categoria observada; leitura descritiva.'
+        elif chart.kind=='box':
+            for index,series in enumerate(chart.series):
+                name=html.escape(series['name'])
+                if len(series['values'])<2:
+                    fig.add_trace(go.Scatter(x=[name]*len(series['values']),y=series['values'],name=name,mode='markers',marker_color=PALETTE[index%len(PALETTE)]))
+                else:
+                    fig.add_trace(go.Box(y=series['values'],name=name,marker_color=PALETTE[index%len(PALETTE)],boxpoints='outliers',hovertemplate='%{y}<extra>%{fullData.name}</extra>'))
+            fig.update_layout(showlegend=False)
         else:
-            fig.add_trace(go.Scatter(x=pd.to_numeric(pair[spec.outcome]).tolist(),
-                y=pd.to_numeric(pair[spec.predictor]).tolist(),mode='markers',
-                marker={'color':PALETTE[0],'size':9,'opacity':.7},
-                hovertemplate=f'{labels[spec.outcome]}: %{{x}}<br>{labels[spec.predictor]}: %{{y}}<extra></extra>'))
-            fig.update_layout(xaxis_title=labels[spec.outcome],yaxis_title=labels[spec.predictor],showlegend=False)
-            summary+=' Cada ponto representa um par de pontuações; sem linha de regressão.'
-        fig.update_layout(template=None,height=360,margin={'l':12,'r':12,'t':12,'b':12},
+            series=chart.series[0]
+            fig.add_trace(go.Scatter(x=series['x'],y=series['y'],mode='markers',marker={'color':PALETTE[0],'size':9,'opacity':.7},hovertemplate='%{x}<br>%{y}<extra></extra>'))
+            fig.update_layout(showlegend=False)
+        fig.update_layout(xaxis_title=html.escape(chart.x_title),yaxis_title=html.escape(chart.y_title),
+                          template=None,height=360,margin={'l':12,'r':12,'t':12,'b':12},
                           paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)',
                           legend={'orientation':'h','y':-0.25},font={'family':'sans-serif'})
-        views.append(ChartView(spec.id,title,fig,len(pair),len(data)-len(pair),summary))
+        title=f'{field_title(spec.outcome,profile)} e {field_title(spec.predictor,profile)}'
+        views.append(ChartView(spec.id,title,fig,chart.n_effective,chart.n_missing,chart.caption))
     return tuple(views)
 
 
