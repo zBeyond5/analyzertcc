@@ -46,8 +46,8 @@ def test_pipeline_confirms_population_and_exports_same_rows(tmp_path):
         assert len(pd.read_excel(result.files['xlsx']))==1
         assert all(r.result.n_effective==1 for r in result.results)
         assert 'PRIVATE PERSON' not in result.files['manifest'].read_text(encoding='utf-8')
-        assert 'Inferência não disponível' in ' '.join(p.text for p in Document(result.files['docx']).paragraphs)
-        assert 'Inferência não disponível' in ''.join(p.extract_text() for p in PdfReader(result.files['pdf']).pages)
+        assert 'Teste estatístico não calculado' in ' '.join(p.text for p in Document(result.files['docx']).paragraphs)
+        assert 'Teste estatístico não calculado' in ' '.join(' '.join(p.extract_text() for p in PdfReader(result.files['pdf']).pages).split())
         prepared.data.loc[0,'IDADE_M']=32
         with pytest.raises(DomainError,match='confirme'):run_pipeline(**args,options=RunOptions(default_comparisons(),population_ack_signature=signature))
     finally:manager.close()

@@ -65,3 +65,9 @@ Resultados e limites: [docs/acceptance.md](docs/acceptance.md). Métodos: [docs/
 ## Análises conforme AV3
 
 Escolha sobrecarga/sono e, se precisar, abra outros fatores da mãe/criança. Cada comparação mostra p, interpretação pelo critério de 5%, método, pares completos e estimativas. p não é desvio padrão nem prova de causa. Se houver questionários incompletos ou participantes fora do critério observável, o aplicativo mostra a contagem e pede confirmação apenas para analisar o grupo elegível; o Excel original continua integral.
+
+## Relatórios para leitura e para o artigo
+
+Os resultados mostram nomes completos, quantidade de respostas utilizadas e explicações dos termos estatísticos. Gráficos da tela e dos documentos usam os mesmos pares completos. Em **Baixar**, escolha **Relatório completo** (sumário com páginas reais no PDF, listas, explicações e apêndice técnico) ou **Material para o artigo** (procedimentos e resultados, sem estrutura de monografia). Trocar o modelo não recalcula estatísticas nem renova o prazo de download.
+
+No Word, atualize os campos do sumário/listas com Ctrl+A e F9; o Word calcula sua própria paginação. O layout é editorial, sem certificação de conformidade ABNT/UNEB ou de um periódico. O conteúdo para artigo é parcial e precisa de revisão científica. Não há IA nem consulta externa na geração; referências e regras consultadas ficam documentadas no projeto.

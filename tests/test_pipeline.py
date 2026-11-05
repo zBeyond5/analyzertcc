@@ -10,7 +10,7 @@ from tcc_analyzer.models import DomainError
 from tcc_analyzer.statistics.selection import default_comparisons
 
 
-def test_pipeline_demo_outputs(source_path,tmp_path):
+def test_pipeline_demo_outputs(source_path,tmp_path,monkeypatch):
     m=JobManager(tmp_path/'jobs');s=SessionContext();j=m.create_job(s)
     try:
         path=m.store_upload(s,j,source_path.name,source_path.read_bytes())
@@ -54,6 +54,13 @@ def test_pipeline_demo_outputs(source_path,tmp_path):
         assert manifest['files_sha256']['relatorio.pdf']==hashlib.sha256(m.read_artifact(s,j,'pdf')).hexdigest()
         with zipfile.ZipFile(article.files['zip']) as z:
             assert z.read('relatorio.pdf')==m.read_artifact(s,j,'pdf')
+        previous_pdf=m.read_artifact(s,j,'pdf')
+        previous_zip=m.read_artifact(s,j,'zip')
+        def fail_render(*args,**kwargs):raise DomainError('render','Falha simulada de geração')
+        monkeypatch.setattr('tcc_analyzer.pipeline.render_pdf',fail_render)
+        with pytest.raises(DomainError):refresh_report_style(manager=m,session=s,job=j,artifacts=article,data=prepared.data,profile=p,style='editorial')
+        assert m.read_artifact(s,j,'pdf')==previous_pdf and m.read_artifact(s,j,'zip')==previous_zip
+        assert j.status=='ready' and j.expires_at==expiry
     finally:m.close()
 
 def test_pending_profile_blocks_real_analysis(source_path,tmp_path):

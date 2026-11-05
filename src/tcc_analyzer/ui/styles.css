@@ -22,4 +22,3 @@ a:focus-visible,button:focus-visible,[role="tab"]:focus-visible { outline: 3px s
 
 /* Selected tags inherit the same accent/foreground pairing as primary buttons. */
 [data-testid="stMultiSelect"] [role="group"] > span > span, [data-testid="stMultiSelect"] [role="group"] > span > button { color: var(--research-on-primary) !important; }
-[data-testid="stCaptionContainer"] { color: var(--research-text) !important; opacity: .8; }

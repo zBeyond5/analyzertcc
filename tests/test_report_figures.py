@@ -32,3 +32,17 @@ def test_empty_single_observation_and_long_labels():
     assert 'ponto' in chart.caption and 'uma categoria' in chart.caption
     assert render_figure(chart)
     assert build_chart_data(sample().iloc[:0],p,ComparisonSpec('none','PSQI','ZARIT')) is None
+
+
+def test_identification_never_becomes_a_scatter_axis():
+    df=sample();df['ID']=[1001,1002,1003,1004]
+    assert build_chart_data(df,load_updated_profile(),ComparisonSpec('private','ID','ZARIT')) is None
+
+
+def test_unknown_categories_remain_visually_distinct():
+    from dataclasses import replace
+    p=load_updated_profile()
+    p=replace(p,variables=tuple(replace(v,labels={}) if v.name=='PSQI_G' else v for v in p.variables))
+    chart=build_chart_data(sample(),p,ComparisonSpec('unknown','PSQI_G','ZARIT'))
+    assert len(set(chart.categories))==2
+    assert all('sem definição confirmada' in name for name in chart.categories)

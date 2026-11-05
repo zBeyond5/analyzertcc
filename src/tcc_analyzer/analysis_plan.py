@@ -13,7 +13,8 @@ MATERNAL=('IDADE_M','SIT_CONJ','ESCOL','RENDA','RED_APO','FILHOS','TRAB_NOT','DO
 CHILD=('IDADE_C','SEXO','TEMP_TEA','ACOMP_TEP','FISIO','FONO','TER_OCUP','PSI','PSICOP','FREQ_TEP','ALT_SONO','DESP_NOT','CHORO','SUPERV')
 
 def question_groups(profile):
-    labels={v.name:v.label for v in profile.variables}
+    from .presentation import field_title
+    labels={v.name:field_title(v.name,profile) for v in profile.variables}
     def group(fields):
         return {('support' if f=='RED_APO' else 'child_sleep' if f=='ALT_SONO' else 'factor_'+f):labels[f] for f in fields if f in labels}
     return dict(principal={'burden':QUESTIONS['burden']},mae=group(MATERNAL),crianca=group(CHILD))

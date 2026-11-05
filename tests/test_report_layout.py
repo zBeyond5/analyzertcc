@@ -78,3 +78,58 @@ def test_toc_links_point_to_real_pages_and_article_has_no_monograph_structure(tm
     assert 'TOC ' in word._element.xml
     word=Document(render_docx(tables,meta,tmp_path/'article.docx',document=document,figures=figures,style='article'))
     assert 'TOC ' not in word._element.xml
+
+
+def test_empty_and_hundred_comparison_documents_are_complete(tmp_path):
+    import pymupdf
+    tables,meta,document,figures=report_example()
+    empty=replace(document,comparisons=())
+    path=render_pdf(tables,meta,tmp_path/'empty.pdf',document=empty)
+    text=' '.join(p.extract_text() for p in PdfReader(path).pages)
+    assert 'Lista de figuras' not in text and 'Nenhuma comparação' in text
+    comparisons=tuple(replace(document.comparisons[0],id=f'comparison-{i}',title=f'Comparação de demonstração {i}') for i in range(100))
+    document=replace(document,comparisons=comparisons)
+    png=figures['burden'];figures={c.id:png for c in comparisons}
+    path=render_pdf(tables,meta,tmp_path/'hundred.pdf',document=document,figures=figures)
+    with pymupdf.open(path) as doc:
+        toc=doc.get_toc()
+        assert sum(title.startswith('4.') and level==2 for level,title,page in toc)==100
+        assert all(title in doc[page-1].get_text().replace('\n',' ') for level,title,page in toc)
+        assert path.stat().st_size<64*1024**2
+
+
+def test_section_heading_stays_with_the_first_table(fictitious_df,tmp_path):
+    import pymupdf
+    from tcc_analyzer.profiles import load_profile
+    p=load_profile()
+    results=tuple(AnalysisResult(ComparisonSpec(str(i),'PSQI_G','ZARIT'),StatisticalResult(method,30)) for i,method in enumerate(('welch_t','descriptive','spearman','fisher')))
+    tables=build_tables(results,(),p,data=fictitious_df)
+    meta={'score_origins':{'PSQI':'informado no banco','ZARIT':'informado no banco'},'fictitious':True}
+    document=build_document(results,tables,p,fictitious_df,meta)
+    path=render_pdf(tables,meta,tmp_path/'headings.pdf',document=document)
+    with pymupdf.open(path) as doc:
+        for page in doc:
+            spans=[s for b in page.get_text('dict')['blocks'] if 'lines' in b for line in b['lines'] for s in line['spans']]
+            if any('3. Caracterização' in s['text'] and s['size']>=14 for s in spans):
+                assert 'Tabela 1.' in page.get_text()
+
+
+def test_shared_unicode_font_is_not_used_in_two_pdfs_at_once(tmp_path,monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from reportlab.platypus import SimpleDocTemplate
+    import threading,time
+    tables,meta,document,figures=report_example()
+    original=SimpleDocTemplate.multiBuild;active=0;peak=0;lock=threading.Lock()
+    def measured_build(self,*args,**kwargs):
+        nonlocal active,peak
+        with lock:active+=1;peak=max(peak,active)
+        try:
+            time.sleep(.1)
+            return original(self,*args,**kwargs)
+        finally:
+            with lock:active-=1
+    monkeypatch.setattr(SimpleDocTemplate,'multiBuild',measured_build)
+    def generate(i):return render_pdf(tables,meta,tmp_path/f'{i}.pdf',document=replace(document,title=f'Sessão de teste {i}'),figures=figures)
+    with ThreadPoolExecutor(max_workers=2) as pool:paths=list(pool.map(generate,(1,2)))
+    assert peak==1  # ReportLab explicitly forbids simultaneous documents sharing a TTFont.
+    for i,path in enumerate(paths,1):assert f'Sessão de teste {i}' in PdfReader(path).pages[0].extract_text()

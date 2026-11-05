@@ -102,6 +102,11 @@ def term_definition(key):
     return TERM_DEFINITIONS.get(key,'Termo sem definição documentada.')
 
 
+def category_titles(code,values,profile):
+    labels=tuple(category_title(code,value,profile) for value in values)
+    return tuple(f'{label} (grupo {i+1})' if labels.count(label)>1 else label for i,label in enumerate(labels))
+
+
 def readable_number(value,digits=1):
     if value is None:return 'Não disponível'
     try:return f'{float(value):.{digits}f}'.replace('.',',') if math.isfinite(float(value)) else 'Não disponível'
@@ -165,10 +170,13 @@ def build_document(results,tables,profile,data,metadata):
     comparisons=[]
     for analysis in results:
         spec,r=analysis.spec,analysis.result
+        if any(kinds.get(c)=='text' for c in (spec.outcome,spec.predictor)):
+            from .models import DomainError
+            raise DomainError('private_variable','Identificação e campos de texto livre não podem integrar os resultados analíticos.')
         pair=complete_pairs(data,spec)
         categorical=[c for c in pair if kinds.get(c)=='categorical']
         order=spec.group_order or (tuple(sorted(pair[categorical[0]].unique())) if categorical else ())
-        group_names=tuple(category_title(categorical[0],g,profile) for g in order) if categorical else ()
+        group_names=category_titles(categorical[0],order,profile) if categorical else ()
         answer=interpret_p(r.p_value,p_kind=r.p_kind)
         valid=answer['status']!='unavailable'
         status={'significant':'Associação estatisticamente significativa pelo critério do projeto.',
@@ -196,7 +204,14 @@ def build_document(results,tables,profile,data,metadata):
                 exposed=category_title(spec.predictor,spec.group_order[0],profile) if len(spec.group_order)==2 else 'não declarado'
                 text+=f'; evento: {event}; grupo comparado: {exposed}; referência: {reference}'
             if effect.ci95 and all(math.isfinite(x) for x in effect.ci95):text+=f'; intervalo de confiança de 95%: {readable_number(effect.ci95[0],3)} a {readable_number(effect.ci95[1],3)}'
-            else:text+='; intervalo de confiança não disponível para este método/amostra'
+            else:
+                reason=effect.unavailable_reason or ''
+                if 'célula zero' in reason:reason='uma combinação de categorias não teve respostas; este método não calculou intervalo'
+                elif 'menor que cinco' in reason or 'menos de cinco' in reason:reason='não há respostas suficientes ou estáveis para estimar o intervalo por reamostragem'
+                elif 'mais de três' in reason:reason='o intervalo deste método exige mais de três respostas completas'
+                elif 'global' in reason:reason='este método não fornece um intervalo global nesta versão; confira as descrições por grupo'
+                else:reason='não disponibilizado para este método/amostra'
+                text+='; intervalo de confiança não disponível: '+reason
             estimates.append(text+'.')
             if name=='correlation' and effect.value is not None and math.isfinite(effect.value):
                 direction='positiva' if effect.value>0 else 'negativa' if effect.value<0 else 'nula'
@@ -233,6 +248,7 @@ def build_document(results,tables,profile,data,metadata):
     for a in results:
         technical.append(f'{a.spec.id}: {a.spec.outcome} × {a.spec.predictor}; família {a.spec.family}; método {a.result.method}; tipo de p {a.result.p_kind}.')
         technical.extend(a.result.assumptions+a.result.warnings)
+        technical.extend(f'{name}: {e.method}; {e.unavailable_reason}' for name,e in a.result.effects.items() if e.unavailable_reason)
     technical.append('As notas de pressupostos descrevem condições do método; não certificam que o desenho do estudo as cumpriu.')
     limitations=('Estudo transversal: associação não demonstra causa.',
                  'Valores de p bilaterais sem ajuste por múltiplas comparações. A interpretação exige cautela, especialmente nas análises exploratórias.',

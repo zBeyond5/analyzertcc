@@ -1,4 +1,5 @@
 from pathlib import Path
+import threading
 from xml.sax.saxutils import escape
 import pandas as pd
 from .models import ReportTables
@@ -6,6 +7,7 @@ from .interpretation import interpret_p,LABELS
 from .presentation import field_title,category_title,ReportDocument,readable_number
 
 FICTITIOUS='Dados fictícios para teste; não representam resultados da pesquisa.'
+_PDF_LOCK=threading.Lock()
 MULTIPLICITY='Valores de p bilaterais sem ajuste; análises exploratórias estão sujeitas à multiplicidade. Associações não demonstram causalidade.'
 METHOD_LABELS={'welch_t':'Welch t','welch_anova':'Welch ANOVA','mann_whitney':'Mann–Whitney','kruskal':'Kruskal–Wallis','spearman':'Spearman','pearson':'Pearson','fisher':'Fisher exato','chi_square':'Qui-quadrado','descriptive':'Descritiva'}
 EFFECT_LABELS={'mean_difference':'Diferença média','odds_ratio':'Razão de chances (OR)','prevalence_ratio':'Razão de prevalências','probability_superiority':'Probabilidade de superioridade','correlation':'Correlação'}
@@ -139,6 +141,12 @@ def _blocks(tables,metadata,document,figures,style):
     for frame in tables.bivariate:
         if not frame.empty:yield 'table','',frame
     for text in document.technical_notes:yield 'small',text,None
+    yield 'small',f'Perfil: {metadata.get("profile_id","não registrado")}; versão {metadata.get("profile_version","não registrada")}. Aplicativo: versão {metadata.get("code_version","não registrada")}.',None
+    rules=metadata.get('score_rules',{})
+    if rules.get('status')=='confirmed':
+        yield 'small','Regra documentada de pontuação do sono: '+str(rules.get('version','não registrada'))+'. A aplicação da regra depende da origem do escore indicada na base analisada.',None
+        for source in rules.get('sources',()):yield 'small','Referência do instrumento: '+str(source),None
+    if metadata.get('package_versions'):yield 'small','Versões das bibliotecas: '+', '.join(f'{name} {version}' for name,version in metadata['package_versions'].items()),None
     if metadata.get('source_sha256'):yield 'small','SHA-256 da fonte: '+metadata['source_sha256'],None
 
 
@@ -160,6 +168,7 @@ def _pdf_styles():
     styles['Title'].fontSize=23;styles['Title'].leading=29;styles['Title'].alignment=0
     styles['Heading1'].fontSize=15;styles['Heading1'].leading=20;styles['Heading1'].spaceBefore=16
     styles['Heading2'].fontSize=12;styles['Heading2'].leading=17;styles['Heading2'].spaceBefore=12
+    styles['Heading1'].keepWithNext=True;styles['Heading2'].keepWithNext=True
     styles.add(ParagraphStyle('Cell',fontName='DejaVuSans',fontSize=9,leading=12,wordWrap='CJK'))
     styles.add(ParagraphStyle('Small',parent=styles['Normal'],fontSize=9,leading=13,textColor=colors.HexColor('#52616B')))
     styles.add(ParagraphStyle('Caption',parent=styles['Small'],fontName='DejaVuSans-Bold',keepWithNext=True))
@@ -168,6 +177,11 @@ def _pdf_styles():
 
 
 def render_pdf(tables,metadata,output,*,document=None,figures=None,style='editorial'):
+    # ReportLab disallows simultaneous documents using the same registered TTFont.
+    with _PDF_LOCK:return _render_pdf(tables,metadata,output,document=document,figures=figures,style=style)
+
+
+def _render_pdf(tables,metadata,output,*,document=None,figures=None,style='editorial'):
     from io import BytesIO
     from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,LongTable,TableStyle,Image,PageBreak
     from reportlab.platypus.tableofcontents import TableOfContents
@@ -206,7 +220,7 @@ def render_pdf(tables,metadata,output,*,document=None,figures=None,style='editor
                 ('LEFTPADDING',(0,0),(-1,-1),5),('RIGHTPADDING',(0,0),(-1,-1),5),('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5)]))
             elements.extend((table,Spacer(1,10)))
         elif kind=='image':
-            img=Image(BytesIO(value));scale=min(available/img.imageWidth,290/img.imageHeight)
+            img=Image(BytesIO(value));scale=min(available/img.imageWidth,540/img.imageHeight)
             img.drawWidth=img.imageWidth*scale;img.drawHeight=img.imageHeight*scale;img.hAlign='LEFT'
             elements.extend((img,Spacer(1,5)))
         else:
@@ -268,7 +282,7 @@ def render_docx(tables,metadata,output,*,document=None,figures=None,style='edito
                     for paragraph in cell.paragraphs:
                         for run in paragraph.runs:run.font.size=Pt(9)
         elif kind=='image':
-            image=Image.open(BytesIO(value));width,height=image.size;scale=min(495/width,290/height)
+            image=Image.open(BytesIO(value));width,height=image.size;scale=min(495/width,540/height)
             doc.add_picture(BytesIO(value),width=Pt(width*scale),height=Pt(height*scale))
         elif kind in ('title','h1','h2'):doc.add_heading(text,{'title':0,'h1':1,'h2':2}[kind])
         else:

@@ -7,7 +7,7 @@ from playwright.sync_api import sync_playwright,expect
 
 def test_two_browsers_full_workflow(tmp_path):
     root=Path(__file__).resolve().parents[1]
-    evidence=root/'test-results/soft-ui';evidence.mkdir(parents=True,exist_ok=True)
+    evidence=root/'test-results/readable-reports/browser';evidence.mkdir(parents=True,exist_ok=True)
     candidates=list((Path.home()/'.agent-browser/browsers').glob('chrome-*/chrome.exe'))
     with socket.socket() as sock:
         sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
@@ -30,6 +30,17 @@ def test_two_browsers_full_workflow(tmp_path):
             archives=[]
             def step(page,number,label):
                 return page.locator('.st-key-project_stepper').get_by_role('button',name=re.compile(rf'{number} · {label}'))
+            def contrast(page,selector):
+                return page.locator(selector).first.evaluate(r"""el => {
+                    const rgba=s=>(s.match(/[\d.]+/g)||[]).map(Number);
+                    const fg=rgba(getComputedStyle(el).color);
+                    let bg=[255,255,255,1],node=el;
+                    while(node){const c=rgba(getComputedStyle(node).backgroundColor);if(c.length>=3&&(c[3]??1)>0.99){bg=c;break;}node=node.parentElement;}
+                    const alpha=fg[3]??1;
+                    const color=fg.slice(0,3).map((c,i)=>alpha*c+(1-alpha)*bg[i]);
+                    const lum=c=>c.slice(0,3).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4}).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
+                    const a=lum(color),b=lum(bg);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+                }""")
             def run(page,changed=False):
                 page.goto(url)
                 expect(page.get_by_role('heading',name='Importe sua planilha',exact=True)).to_be_visible(timeout=30000)
@@ -63,7 +74,7 @@ def test_two_browsers_full_workflow(tmp_path):
                 page.get_by_role('button',name='Analisar dados',exact=True).click()
                 expect(page.get_by_role('heading',name='Confira os resultados e o relatório')).to_be_visible(timeout=30000)
                 expect(page.get_by_text('Como ler o valor de p',exact=True)).to_be_visible()
-                assert page.get_by_text(re.compile('Significativa pelo critério de 5%|Não atingiu o critério de 5%|Inferência não disponível')).count() >= 3
+                assert page.get_by_text(re.compile('Associação estatisticamente significativa|não atingiu o critério estatístico|Teste estatístico não calculado')).count() >= 3
                 graph=page.get_by_test_id('stPlotlyChart')
                 expect(graph).to_be_visible()
                 expect(graph.locator('.js-plotly-plot')).to_be_visible()
@@ -95,6 +106,7 @@ def test_two_browsers_full_workflow(tmp_path):
                     expect(graph).to_be_visible()
                     graph.scroll_into_view_if_needed()
                     page.screenshot(path=str(evidence/'results-dark-mobile.png'),full_page=True)
+                    assert contrast(page,'[data-testid=stCaptionContainer]')>=4.5
                     page.get_by_test_id('stMainMenu').click()
                     page.get_by_role('menuitemradio',name='Light',exact=True).click()
                     page.keyboard.press('Escape')
@@ -106,6 +118,23 @@ def test_two_browsers_full_workflow(tmp_path):
                 with page.expect_download() as info:link.click()
                 path=tmp_path/('second.zip' if changed else 'first.zip');info.value.save_as(path)
                 page.screenshot(path=str(evidence/('second.png' if changed else 'first.png')),full_page=True)
+                if not changed:
+                    page.get_by_role('combobox',name='Apresentação do relatório',exact=True).click()
+                    page.get_by_role('option',name='Material para o artigo',exact=True).click()
+                    expect(page.get_by_text('Procedimentos e resultados para integrar o artigo. A redação final e as normas do periódico precisam de revisão.',exact=True)).to_be_visible(timeout=30000)
+                    page.get_by_role('button',name='Preparar download',exact=True).click()
+                    link=page.get_by_role('link',name='Baixar resultado_completo.zip',exact=True)
+                    with page.expect_download() as info:link.click()
+                    article_path=tmp_path/'article.zip';info.value.save_as(article_path)
+                    with zipfile.ZipFile(article_path) as z:
+                        assert json.loads(z.read('manifesto.json'))['report_style']=='article'
+                        from pypdf import PdfReader
+                        content=' '.join(p.extract_text() for p in PdfReader(io.BytesIO(z.read('relatorio.pdf'))).pages)
+                        assert 'Material para o artigo' in content and 'Apêndice técnico' not in content
+                    page.screenshot(path=str(evidence/'article-download.png'),full_page=True)
+                    page.get_by_role('combobox',name='Apresentação do relatório',exact=True).click()
+                    page.get_by_role('option',name='Relatório completo',exact=True).click()
+                    expect(page.get_by_role('combobox',name='Arquivo para baixar',exact=True)).to_be_visible(timeout=30000)
                 return zipfile.ZipFile(path)
             first=contexts[0].new_page();network=[]
             first.on('request',lambda req:network.append(req.url))
@@ -130,17 +159,6 @@ def test_two_browsers_full_workflow(tmp_path):
             assert not attempt.body().startswith(b'PK')
             # Visual acceptance matrix: all five steps, two themes and two widths.
             import math
-            def contrast(page,selector):
-                return page.locator(selector).first.evaluate(r"""el => {
-                    const rgba=s=>(s.match(/[\d.]+/g)||[]).map(Number);
-                    const fg=rgba(getComputedStyle(el).color);
-                    let bg=[255,255,255,1],node=el;
-                    while(node){const c=rgba(getComputedStyle(node).backgroundColor);if(c.length>=3&&(c[3]??1)>0.99){bg=c;break;}node=node.parentElement;}
-                    const alpha=fg[3]??1;
-                    const color=fg.slice(0,3).map((c,i)=>alpha*c+(1-alpha)*bg[i]);
-                    const lum=c=>c.slice(0,3).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4}).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
-                    const a=lum(color),b=lum(bg);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
-                }""")
             for mode in ('Light','Dark'):
                 first.get_by_test_id('stMainMenu').click()
                 first.get_by_role('menuitemradio',name=mode,exact=True).click();first.keyboard.press('Escape')

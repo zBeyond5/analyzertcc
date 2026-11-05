@@ -4,7 +4,7 @@ from io import BytesIO
 import textwrap
 import threading
 import pandas as pd
-from .presentation import complete_pairs,field_title,category_title
+from .presentation import complete_pairs,field_title,category_titles
 
 PALETTE=('#216C72','#6788B1','#A77C48','#AC7679','#767F88')
 _RENDER_LOCK=threading.Lock()
@@ -24,20 +24,21 @@ class ChartData:
 
 
 def build_chart_data(data,profile,spec):
+    kinds={v.name:v.kind for v in profile.variables};kinds['ZARIT_CLASS']='categorical'
+    if any(kinds.get(c)=='text' for c in (spec.outcome,spec.predictor)):return None
     pair=complete_pairs(data,spec)
     if pair.empty:return None
-    kinds={v.name:v.kind for v in profile.variables};kinds['ZARIT_CLASS']='categorical'
     cats=[c for c in pair if kinds.get(c)=='categorical']
     caption=f'{len(pair)} respostas completas; {len(data)-len(pair)} sem par completo.'
     if len(cats)==2:
         outcomes=tuple(sorted(pair[spec.outcome].unique()))
         predictors=tuple(sorted(pair[spec.predictor].unique()))
-        categories=tuple(category_title(spec.outcome,g,profile) for g in outcomes)
+        categories=category_titles(spec.outcome,outcomes,profile)
         totals=tuple(int((pair[spec.outcome]==g).sum()) for g in outcomes)
         series=[]
-        for value in predictors:
+        for value,name in zip(predictors,category_titles(spec.predictor,predictors,profile)):
             counts=tuple(int(((pair[spec.outcome]==g)&(pair[spec.predictor]==value)).sum()) for g in outcomes)
-            series.append(dict(name=category_title(spec.predictor,value,profile),counts=counts,totals=totals,
+            series.append(dict(name=name,counts=counts,totals=totals,
                                percentages=tuple(100*n/t for n,t in zip(counts,totals))))
         caption+=' As barras mostram percentuais; o denominador é o total de respostas completas de cada grupo, indicado entre parênteses.'
         if len(outcomes)==1 or len(predictors)==1:caption+=' Há apenas uma categoria observada; leitura descritiva.'
@@ -45,7 +46,7 @@ def build_chart_data(data,profile,spec):
     if len(cats)==1:
         group=cats[0];number=next(c for c in pair if c!=group)
         order=spec.group_order or tuple(sorted(pair[group].unique()))
-        categories=tuple(category_title(group,v,profile) for v in order)
+        categories=category_titles(group,order,profile)
         series=tuple(dict(name=name,values=tuple(pd.to_numeric(pair.loc[pair[group]==v,number]).astype(float))) for v,name in zip(order,categories))
         caption+=' As caixas mostram a mediana e os 50% centrais das respostas. Grupos com menos de duas respostas são apresentados como pontos.'
         if len(order)==1:caption+=' Há apenas uma categoria observada; leitura descritiva.'

@@ -71,3 +71,17 @@ def test_zero_pairs_and_sparse_tables_have_specific_reasons():
     assert 'Não há respostas completas' in build_example((a,),pd.DataFrame({'PSQI_G':[], 'ZARIT':[]})).comparisons[0].reading
     a.result.n_effective=4;a.result.warnings=('Tabela RxC esparsa: somente descrição, sem p.',)
     assert 'poucas participantes' in build_example((a,)).comparisons[0].reading
+
+
+def test_questions_use_the_shared_readable_vocabulary():
+    from tcc_analyzer.analysis_plan import question_groups
+    groups=question_groups(load_profile())
+    assert groups['mae']['factor_DEPRE']=='Depressão (diagnóstico informado)'
+    assert groups['mae']['factor_ESCOL']=='Grau de escolaridade'
+
+
+def test_identification_is_refused_in_document():
+    import pandas as pd
+    from tcc_analyzer.models import AnalysisResult,ComparisonSpec,TestResult,DomainError
+    a=AnalysisResult(ComparisonSpec('private','ID','ZARIT'),TestResult('pearson',3))
+    with pytest.raises(DomainError):build_example((a,),pd.DataFrame({'ID':[1,2,3],'ZARIT':[20,30,40]}))
