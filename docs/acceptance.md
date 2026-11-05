@@ -1,5 +1,30 @@
 # Validação do aplicativo
 
+## Revisão de usabilidade — 2026-11-04
+
+Esta seção atualiza os estados históricos abaixo para o perfil do banco atualizado. O formato legado permanece preservado.
+
+- Entrada com importar/criar; criação começa pelas categorias e segue uma pergunta por vez. Excel preenchido privado, rascunho exportável/reimportável e nome opcional fora de estatísticas/relatórios.
+- Dicionário e perguntas lidos das abas do arquivo. Conferência sem referência manual, sem correção obrigatória e sem checkbox de pressupostos. Perguntas de pesquisa com plano automático; download acessível após resultados.
+- Perfil de 69 respostas com PSQI/Zarit calculados por funções Python; regras, fontes e fronteiras em methods.md. O aceite local do arquivo fornecido (simulado) gerou relatórios e exportações. Isso não substitui aceite científico pela responsável.
+- Tema nativo Claro/Escuro/Sistema pelo menu ⋮ → Light / Dark / System; sem CSS de inversão e sem configuração global mutável por sessão. A implementação usa toolbar viewer para manter esse controle disponível.
+- Revisão independente corrigiu atualização de escores após mudanças, preservação do aviso fictício ao retomar e cache de categorias ao reimportar.
+- Evidências de navegador ficam em test-results/usability (ignorado pelo Git); suíte completa: **134 testes passaram em 57,93 s**, incluindo navegador real. Compilação sem erros e pip check sem dependências quebradas.
+- Não foram realizados novos testes em cliente remoto Hamachi, Epi Info nem publicação desta revisão no Streamlit Cloud.
+
+## Navegação e visualização — 2026-11-04
+
+Validação final: `python -m pytest -q` → **146 passed in 111.06s**; `compileall` sem erros e `pip check` sem dependências quebradas. Preview local exibido antes do commit/push.
+
+- Passo a passo com etapas concluídas, atual e próximas; atalhos laterais sincronizados. Retorno 3 → 2 → 1 → 3 preserva dados; alteração invalida resultados imediatamente.
+- Cinco etapas dentro de 360 px, distribuídas em linhas. Sem título redundante na lateral; Nova análise pede confirmação contextual.
+- Gráficos Plotly com n/denominadores dos mesmos pares da análise, somente variáveis necessárias e sem nomes/IDs no payload. Testes cobrem correspondência dos dados e ausência de identificadores.
+- Abas nativas Resumo/Tabelas/Detalhes adotadas após o protótipo shadcn reprovar contraste no modo escuro. Plotly 7.1.0 fixado no projeto e lock.
+- Navegador real: retorno, tabelas/detalhes/resumo, gráfico com dados, claro/escuro/celular, downloads privados, sentinelas por sessão, retomada do Excel e invalidação. Capturas em test-results/interface.
+- Revisão corrigiu importação parcialmente aplicada após falha e alinhou liberação da navegação às demonstrações reconhecidas pelo pipeline.
+
+## Registro histórico da primeira entrega
+
 Verificação em Windows, Python 3.12.10, em 2026-11-04. A aplicação está instalada em `.venv`; versões exatas em `requirements.lock` e `requirements-dev.lock`.
 
 ## Evidência automatizada

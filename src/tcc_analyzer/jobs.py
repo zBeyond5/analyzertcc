@@ -32,7 +32,7 @@ class CleanupSummary:
     active_skipped: int = 0
     failed: int = 0
 
-ALLOWED_ARTIFACTS={'relatorio.docx','relatorio.pdf','tabelas.xlsx','epiinfo_dados.xlsx','epiinfo_dados.csv','dicionario.xlsx','manifesto.json','auditoria.json','resultado_completo.zip'}
+ALLOWED_ARTIFACTS={'banco_preenchido.xlsx','relatorio.docx','relatorio.pdf','tabelas.xlsx','epiinfo_dados.xlsx','epiinfo_dados.csv','dicionario.xlsx','manifesto.json','auditoria.json','resultado_completo.zip'}
 
 def _file_lock(file,acquire):
     file.seek(0)

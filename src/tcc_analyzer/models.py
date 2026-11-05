@@ -32,6 +32,7 @@ class DatasetMeta:
 class ImportedDataset:
     raw: pd.DataFrame
     meta: DatasetMeta
+    metadata: dict = field(default_factory=dict)
 
 @dataclass(frozen=True)
 class VariableSpec:
@@ -53,6 +54,10 @@ class ResearchProfile:
     derived_rules: dict = field(default_factory=dict)
     comparisons: tuple = ()
     confirmation: str = ''
+    input_fields: tuple = ()
+    derived_fields: tuple = ()
+    instrument_mode: str = 'recorded'
+    canonical_codes: dict = field(default_factory=dict)
 
 @dataclass(frozen=True)
 class ValidationIssue:

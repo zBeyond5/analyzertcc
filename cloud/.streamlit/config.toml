@@ -12,12 +12,23 @@ fileWatcherType = "none"
 gatherUsageStats = false
 
 [client]
-toolbarMode = "minimal"
+toolbarMode = "viewer"
 
 [theme]
-base = "light"
-primaryColor = "#1F6675"
-backgroundColor = "#F7FAFC"
-secondaryBackgroundColor = "#EAF0F3"
-textColor = "#173441"
 font = "sans serif"
+baseRadius = "0.65rem"
+buttonRadius = "0.65rem"
+
+[theme.light]
+primaryColor = "#216C72"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F5F5"
+textColor = "#203B43"
+borderColor = "#D7E2E3"
+
+[theme.dark]
+primaryColor = "#88CDD0"
+backgroundColor = "#141F29"
+secondaryBackgroundColor = "#20313D"
+textColor = "#EBF2F4"
+borderColor = "#49616C"

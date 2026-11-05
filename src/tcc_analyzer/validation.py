@@ -1,13 +1,15 @@
 import pandas as pd
 import numpy as np
-from .models import ValidationIssue,ValidationReport,PreparedDataset,Transformation
-from .scales import score_zarit,classify_psqi,hours_in_bed,decimal_hour_to_minutes
+from .models import ValidationIssue,ValidationReport,PreparedDataset,Transformation,DomainError
+from .scales import score_zarit,score_psqi,classify_psqi,hours_in_bed,decimal_hour_to_minutes,clock_to_decimal
+from .profiles import ALIASES
 
 def validate_dataset(df,profile):
     issues=[]
     def add(row,field,raw,code,severity,message):issues.append(ValidationIssue(row,field,raw,code,severity,message))
     for v in profile.variables:
         if v.name not in df:
+            if v.name in profile.derived_fields:continue
             add(None,v.name,None,'missing_column','error','Coluna obrigatória ausente.');continue
         if v.mapping_status=='pending':add(None,v.name,None,'mapping_pending','error','Legenda não confirmada: usar códigos neutros apenas na demonstração.')
         for i,x in df[v.name].items():
@@ -43,7 +45,7 @@ def validate_dataset(df,profile):
             add(i,'PSQI',row.PSQI,'incomplete_instrument','error','Há respostas PSQI ausentes. Confira os itens ou remova os totais/classificações inutilizáveis desta cópia.')
         if all(pd.notna(row.get(c)) for c in ('H_DEIT','H_LEV','H_SONO')):
             try:
-                if not 0<float(row.H_SONO)<=hours_in_bed(float(row.H_DEIT),float(row.H_LEV)):raise ValueError()
+                if not 0<=float(row.H_SONO)<=hours_in_bed(row.H_DEIT,row.H_LEV):raise ValueError()
             except (ValueError,TypeError):add(i,'H_SONO',row.H_SONO,'invalid_sleep_hours','error','Confira horários decimais e horas de sono: duração incompatível com horas na cama.')
         if pd.notna(row.get('IDADE_M')):
             try:
@@ -53,6 +55,19 @@ def validate_dataset(df,profile):
 
 def prepare_dataset(imported,profile,csv_options=None):
     df=imported.raw.copy(deep=True);changes=[]
+    for original,canonical in ALIASES.items():
+        if original in df:
+            if canonical in df:raise DomainError('alias_collision',f'As colunas {original} e {canonical} representam a mesma pergunta. Mantenha somente uma.')
+            df=df.rename(columns={original:canonical});changes.append(Transformation(None,canonical,original,canonical,'Nome original preservado; alias documentado'))
+    for field in ('H_DEIT','H_LEV'):
+        if field in df:
+            for i,value in df[field].items():
+                if pd.isna(value) or value=='':continue
+                try:converted=clock_to_decimal(value)
+                except DomainError:continue
+                df[field]=df[field].astype(object)
+                df.at[i,field]=converted
+                if not isinstance(value,(int,float)):changes.append(Transformation(i,field,str(value),converted,'Horário convertido em cópia; fonte preservada'))
     for v in profile.variables:
         if v.name not in df or v.kind=='text' or v.name=='ID':continue
         original=df[v.name].copy()
@@ -61,10 +76,37 @@ def prepare_dataset(imported,profile,csv_options=None):
         # Valores não numéricos ficam visíveis para validação, nunca viram missing silenciosamente.
         invalid=converted.isna() & original.notna() & original.ne('')
         df[v.name]=converted.astype(object) if invalid.any() else converted
-        df.loc[invalid,v.name]=original[invalid]
+        if invalid.any():df.loc[invalid,v.name]=original[invalid]
         for i in df.index:
             if isinstance(original.at[i],str) and not invalid.at[i]:changes.append(Transformation(i,v.name,original.at[i],df.at[i,v.name],'Conversão numérica em cópia'))
-    if all(f in df for f in ('ZARIT',)):
+    if profile.instrument_mode=='responses':
+        for name,scorer in (('ZARIT',score_zarit),('PSQI',score_psqi)):
+            results=[scorer(row,profile) for _,row in df.iterrows()]
+            if name not in df:
+                df[name]=[r.total for r in results]
+                changes.append(Transformation(None,name,None,'calculado por participante',f'Escore gerado: {profile.psqi_rules.get("version","soma dos 22 itens")}'))
+            if name=='PSQI' and 'PSQI_G' not in df:
+                df['PSQI_G']=[r.category for r in results]
+                changes.append(Transformation(None,'PSQI_G',None,'calculado por participante','Escore gerado: corte PSQI >5'))
+    if 'ZARIT' in df:
         df['ZARIT_CLASS']=[score_zarit(row,profile).category for _,row in df.iterrows()]
     report=validate_dataset(df,profile)
+    extra=tuple(ValidationIssue(None,field,None,'metadata','error',message) for field,message in imported.metadata.get('issues',()))
+    report=ValidationReport(report.issues+extra)
     return PreparedDataset(df,imported.meta,tuple(changes),report)
+
+def refresh_generated_scores(prepared,profile):
+    """Recalculate only generated outputs after a correction, keeping supplied totals intact."""
+    df=prepared.data.copy(deep=True);changes=list(prepared.transformations)
+    generated={change.field for change in changes if change.reason.startswith('Escore gerado:')}
+    for name,scorer in (('ZARIT',score_zarit),('PSQI',score_psqi)):
+        if name not in generated:continue
+        results=[scorer(row,profile) for _,row in df.iterrows()]
+        for field,values in ((name,[r.total for r in results]),('PSQI_G' if name=='PSQI' else 'ZARIT_CLASS',[r.category for r in results])):
+            if field=='PSQI_G' and field not in generated:continue
+            for (i,old),new in zip(df[field].items(),values):
+                if not ((pd.isna(old) and new is None) or old==new):changes.append(Transformation(i,field,old,new,'Atualização de escore derivado após correção'))
+            df[field]=values
+    if 'ZARIT_CLASS' in df:df['ZARIT_CLASS']=[score_zarit(row,profile).category for _,row in df.iterrows()]
+    metadata=tuple(i for i in prepared.validation.issues if i.code=='metadata')
+    return PreparedDataset(df,prepared.source_meta,tuple(changes),ValidationReport(validate_dataset(df,profile).issues+metadata))

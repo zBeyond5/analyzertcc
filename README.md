@@ -14,15 +14,17 @@ Abra **http://127.0.0.1:8501**. O servidor local escuta somente no computador an
 
 ## Usar
 
-1. Clique em **Experimentar dados fictícios** ou envie XLSX/XLS/CSV (até 20 MiB).
-2. Confira os valores, dicionário, totais dos instrumentos e avisos. Correções exigem confirmação e podem ser desfeitas.
-3. Selecione cruzamentos, confira os métodos e os pressupostos e execute.
-4. Revise tabelas, estimativas, n efetivo, IC e limitações; confirme a revisão.
-5. Prepare um arquivo individual ou o ZIP completo e clique no link de download.
+1. **Importar planilha** lê as respostas e as abas Perguntas/Categorias automaticamente.
+2. **Criar planilha** permite manter ou ajustar categorias, responder uma pergunta por vez e baixar o Excel preenchido. É possível salvar um rascunho e importá-lo para continuar depois.
+3. **Conferir** mostra pendências reais; edição de categorias e correções ficam recolhidas. Um banco válido não exige preencher referências ou justificar alterações inexistentes.
+4. **Analisar** apresenta perguntas de pesquisa, com métodos definidos pelo programa.
+5. **Resultados → Baixar** entrega Word, PDF, tabelas e pacote ZIP privado.
 
-A demonstração inclui 30 registros fictícios. Dados reais exigem confirmação da legenda numérica no próprio aplicativo. Códigos ausentes no exemplo podem ser acrescentados no editor do dicionário; nunca inferimos significado pelas frequências.
+Use o passo a passo no topo ou as abas do projeto à esquerda para navegar. Etapas concluídas mostram ✓ e permitem voltar; modificar respostas invalida os resultados dependentes. Em Resultados, as abas Resumo/Tabelas/Detalhes incluem gráficos interativos com os mesmos dados da análise.
 
-O PSQI fornecido é validado quanto à faixa e classificação; o recálculo dos sete componentes permanece bloqueado até confirmação da versão/manual do instrumento. Zarit é conferido pela soma dos 22 itens. O aplicativo não gera regressão ou conclusões causais.
+Para alternar claro/escuro/sistema, abra o menu **⋮ → Light (claro) / Dark (escuro) / System (sistema)**. A escolha é nativa do navegador e não apaga respostas.
+
+O perfil atualizado usa as 69 respostas documentadas e calcula PSQI/Zarit com regras e limites registrados em docs/methods.md. O formato legado continua aceito com seus totais fornecidos. Perguntas/códigos desconhecidos não recebem significados inventados. Dados fictícios permanecem identificados ao exportar e retomar no assistente. Nenhuma IA ou consulta web é usada na execução.
 
 ## Instalar em outro ambiente
 

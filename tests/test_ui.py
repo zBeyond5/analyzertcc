@@ -18,7 +18,7 @@ def test_cloud_entry_preserves_local_bind_and_explains_processing(tmp_path,monke
     monkeypatch.setenv('TCC_DEPLOYMENT','cloud')
     at=AppTest.from_file(root/'cloud/app.py',default_timeout=30).run()
     assert not at.exception
-    assert any('nuvem' in element.value for element in at.markdown)
+    assert any('nuvem' in element.value for element in [*at.markdown,*at.caption])
 
 def test_app_demo_workflow(tmp_path,monkeypatch):
     monkeypatch.setenv('TCC_RUNTIME_ROOT',str(tmp_path/'ui-jobs'))
@@ -28,4 +28,4 @@ def test_app_demo_workflow(tmp_path,monkeypatch):
     assert not at.exception
     assert at.session_state['workflow'].prepared.data.shape==(30,76)
     assert at.session_state['workflow'].fictitious
-    assert at.session_state['navigation']=='2 · Validar'
+    assert at.session_state['navigation']=='2 · Conferir'

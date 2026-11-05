@@ -13,6 +13,7 @@ from .statistics.categorical import analyze_contingency
 from .statistics.numeric import compare_groups,correlate
 
 DEMO_SHA256='e2a2fb48502e3a31b06af7c421417afc3819465a59c54127a1805fab3c137f3c'
+UPDATED_DEMO_SHA256='833acfeb3e5fee0c384c825acbc825fde105962871d823da9e591b80c4c44d81'
 @dataclass(frozen=True)
 class RunOptions:
     comparisons: tuple
@@ -50,12 +51,12 @@ def run_pipeline(*,manager,session,job,source_path,prepared,profile,options,prog
     manager._check(session,job)
     if source_path!=job.source_path or hashlib.sha256(source_path.read_bytes()).hexdigest()!=prepared.source_meta.source_sha256:
         raise DomainError('source','A fonte não corresponde à execução atual.')
-    demo=options.fictitious and prepared.source_meta.source_sha256==DEMO_SHA256
-    if options.fictitious and not demo:raise DomainError('demo_source','Use a base de demonstração fornecida para o modo fictício.')
-    if options.score_source!='recorded':raise DomainError('psqi_rules','Recálculo PSQI indisponível até confirmação científica do manual.')
-    issues=validate_dataset(prepared.data,profile).issues
-    blockers=[i for i in issues if i.severity=='error' and not (demo and i.code=='mapping_pending')]
-    if blockers:raise DomainError('validation','Corrija os erros de validação e confirme as legendas antes de analisar.')
+    trusted_demo=options.fictitious and prepared.source_meta.source_sha256 in (DEMO_SHA256,UPDATED_DEMO_SHA256)
+    demo=bool(options.fictitious)
+    if options.score_source!='recorded' and profile.psqi_rules.get('status')!='confirmed':raise DomainError('psqi_rules','A regra de pontuação deste questionário ainda não está definida.')
+    issues=validate_dataset(prepared.data,profile).issues+tuple(i for i in prepared.validation.issues if i.code=='metadata')
+    blockers=[i for i in issues if i.severity=='error' and not (trusted_demo and i.code=='mapping_pending')]
+    if blockers:raise DomainError('validation','Confira os problemas indicados nos dados antes de analisar.')
     comparisons=freeze_comparisons(options.comparisons,profile)
     if not comparisons:raise DomainError('comparisons','Selecione ao menos um cruzamento.')
     if len(comparisons)>100:raise DomainError('comparisons','Selecione no máximo 100 cruzamentos por execução.')
@@ -66,7 +67,7 @@ def run_pipeline(*,manager,session,job,source_path,prepared,profile,options,prog
         fields=tuple(v.name for v in profile.variables if v.name in df and v.kind!='text')
         summaries=describe(df,fields,profile)
         tables=build_tables(results,summaries,profile,data=df)
-        meta=dict(profile_id=profile.id,profile_version=profile.version,profile_sha256=hashlib.sha256(json.dumps(asdict(profile),sort_keys=True,default=str).encode()).hexdigest(),source_sha256=prepared.source_meta.source_sha256,generated_at=datetime.now(timezone.utc).isoformat(),fictitious=demo,score_source='recorded',seed=20261104,package_versions={n:importlib.metadata.version(n) for n in ('streamlit','pandas','numpy','scipy','statsmodels','openpyxl','python-docx','reportlab')},code_version='0.1.0',mapping_confirmation=profile.confirmation or 'Demonstração com códigos neutros, sem aprovação científica',missing_policy='Pares completos; sem imputação',comparisons=[asdict(c) for c in comparisons],results=[asdict(a) for a in results],n_total=len(df),csv_format=asdict(options.csv_format),limitations=['PSQI informado: componentes não recalculados','Não comprova elegibilidade não observável no banco','Compatibilidade Epi Info requer teste na instalação Windows de destino'])
+        meta=dict(profile_id=profile.id,profile_version=profile.version,profile_sha256=hashlib.sha256(json.dumps(asdict(profile),sort_keys=True,default=str).encode()).hexdigest(),source_sha256=prepared.source_meta.source_sha256,generated_at=datetime.now(timezone.utc).isoformat(),fictitious=demo,score_source=('calculated_from_responses' if profile.instrument_mode=='responses' else 'recorded'),score_rules=profile.psqi_rules,seed=20261104,package_versions={n:importlib.metadata.version(n) for n in ('streamlit','pandas','numpy','scipy','statsmodels','openpyxl','python-docx','reportlab')},code_version='0.1.0',mapping_confirmation=profile.confirmation or 'Demonstração com códigos neutros, sem aprovação científica',missing_policy='Pares completos; sem imputação',comparisons=[asdict(c) for c in comparisons],results=[asdict(a) for a in results],n_total=len(df),csv_format=asdict(options.csv_format),limitations=[('PSQI calculado pelas regras documentadas' if profile.instrument_mode=='responses' else 'PSQI informado: componentes não recalculados'),'Não comprova elegibilidade não observável no banco','Compatibilidade Epi Info requer teste na instalação Windows de destino'])
         progress('Gerando relatórios e arquivos de exportação')
         folder=job.directory
         files={'docx':render_docx(tables,meta,folder/'relatorio.docx'),'pdf':render_pdf(tables,meta,folder/'relatorio.pdf')}

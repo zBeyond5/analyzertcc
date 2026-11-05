@@ -1,0 +1,1054 @@
+id: tea_maternal_sleep_updated_v1
+version: '1.0'
+confirmation: Categorias e Perguntas do banco atualizado; projeto AV3, anexos I e
+  II
+input_fields:
+- ID
+- IDADE_M
+- SIT_CONJ
+- ESCOL
+- OCUP
+- RENDA
+- RED_APO
+- FILHOS
+- TRAB_NOT
+- DOENCA
+- ANTIDEP
+- ANSIED
+- DEPRE
+- IDADE_C
+- SEXO
+- TEMP_TEA
+- ACOMP_TEP
+- FISIO
+- FONO
+- TER_OCUP
+- PSI
+- PSICOP
+- OUTRA
+- FREQ_TEP
+- ALT_SONO
+- DESP_NOT
+- CHORO
+- SUPERV
+- H_DEIT
+- N_MIN
+- H_LEV
+- H_SONO
+- NAO_CONS
+- ACORD
+- PREC_LEV
+- NAO_RESP
+- TOS_RONC
+- FRIO
+- CALOR
+- SONHOS
+- DOR
+- DIF_DORM
+- QUA_SONO
+- FREQ_MED
+- DIF_ACOR
+- ANIMO
+- PARCEIRO
+- TEMP_VOC
+- ESTRES
+- IRRIT
+- AFET_REL
+- MEDO
+- DEPENDE
+- TENSO
+- SAU_FIS
+- PRIV
+- VID_SOC
+- DESCONF
+- UNICA_P
+- DINHEIRO
+- CAP_CUI
+- CONTROLE
+- INCAPAZ
+- FAZ_MAIS
+- CUID_MEL
+- MAIS_AJUD
+- EXAUSTO
+- CONST
+- UNIC_RESP
+derived_fields:
+- PSQI
+- PSQI_G
+- ZARIT
+- ZARIT_CLASS
+instrument_mode: responses
+psqi_rules:
+  status: confirmed
+  version: pitt1989-ninds-boundaries-v1
+  sources:
+  - https://www.psychiatry.pitt.edu/sites/default/files/inline-files/PSQI%20Article.pdf
+  - https://cde.nlm.nih.gov/deView?tinyId=mkdasX5iSR
+variables:
+- name: ID
+  label: Identificação
+  kind: text
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: IDADE_M
+  label: Idade da mãe em anos
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: SIT_CONJ
+  label: Situação conjungal
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Com companheiro
+    2: Sem companheiro
+- name: ESCOL
+  label: Nível de escolaridade
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Não escolarizado
+    2: Baixa
+    3: Média
+    4: Alta
+- name: OCUP
+  label: Qual ocupação?
+  kind: text
+  allowed_values: null
+  export_default: false
+  mapping_status: confirmed
+  labels: {}
+- name: RENDA
+  label: Renda familiar mensal
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: ≤ 1
+    2: '> 1 a ≤ 2'
+    3: '> 2 a ≤ 3'
+    4: Acima de 3
+- name: RED_APO
+  label: Possui rede de apoio para auxiliar nos cuidados da criança?
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: FILHOS
+  label: Número de filhos
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: TRAB_NOT
+  label: Realiza trabalho noturno?
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: DOENCA
+  label: Possui alguma doença crônica diagnosticada?
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: ANTIDEP
+  label: Faz uso de antidepressivos?
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: ANSIED
+  label: Possui diagnóstico prévio de ansiedade?
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: DEPRE
+  label: Possui diagnóstico prévio de depressão?
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: IDADE_C
+  label: Idade da criança em anos
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: SEXO
+  label: Sexo
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Feminino
+    2: Masculino
+- name: TEMP_TEA
+  label: Tempo de diagnóstico do TEA
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: ACOMP_TEP
+  label: Realiza acompanhamento terapêutico?
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: FISIO
+  label: Fisioterapia
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: FONO
+  label: Fonoaudiologia
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: TER_OCUP
+  label: Terapia ocupacional
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: PSI
+  label: Psicologia
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: PSICOP
+  label: Psicopedagogia
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: OUTRA
+  label: Outra terapia
+  kind: text
+  allowed_values: null
+  export_default: false
+  mapping_status: confirmed
+  labels: {}
+- name: FREQ_TEP
+  label: Frequência das terapias
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Não faz terapia
+    1: 1 vez
+    2: 2 vezes
+    3: 3 vezes
+    4: mais de 3 vezes
+- name: ALT_SONO
+  label: A criança apresenta alterações no sono?
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: DESP_NOT
+  label: Em média, quantos despertares noturnos ocorrem por noite?
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: CHORO
+  label: A criança apresenta episódios de choro intenso durante a noite?
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: SUPERV
+  label: Necessita de supervisão constante?
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Sim
+    2: Não
+- name: H_DEIT
+  label: Durante o último mês, quando você geralmente foi para a cama a noite?
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: N_MIN
+  label: Durante o último mês, quanto tempo (em minutos) você geralmente levou para
+    dormir a noite?
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: H_LEV
+  label: Durante o último mês, quando você geralmente levantou de manhã?
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: H_SONO
+  label: Durante o último mês, quantas horas de sono você teve por noite? (Este pode
+    ser diferente do número de horas que você ficou na cama)
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: NAO_CONS
+  label: Durante o último mês, com que frequência você teve dificuldade para dormir
+    porque você não conseguiu adormecer em até 30 minutos
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nenhuma no último mês
+    1: Menos de uma vez por semana
+    2: Uma ou duas vezes por semana
+    3: Três ou mais vezes na semana
+- name: ACORD
+  label: Durante o último mês, com que frequência você teve dificuldade para dormir
+    porque você acordou no meio da noite ou de manhã cedo
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nenhuma no último mês
+    1: Menos de uma vez por semana
+    2: Uma ou duas vezes por semana
+    3: Três ou mais vezes na semana
+- name: PREC_LEV
+  label: Durante o último mês, com que frequência você teve dificuldade para dormir
+    porque você precisou levantar para ir ao banheiro
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nenhuma no último mês
+    1: Menos de uma vez por semana
+    2: Uma ou duas vezes por semana
+    3: Três ou mais vezes na semana
+- name: NAO_RESP
+  label: Durante o último mês, com que frequência você teve dificuldade para dormir
+    porque você não conseguiu respirar confortavelmente
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nenhuma no último mês
+    1: Menos de uma vez por semana
+    2: Uma ou duas vezes por semana
+    3: Três ou mais vezes na semana
+- name: TOS_RONC
+  label: Durante o último mês, com que frequência você teve dificuldade para dormir
+    porque você tossiu ou roncou forte
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nenhuma no último mês
+    1: Menos de uma vez por semana
+    2: Uma ou duas vezes por semana
+    3: Três ou mais vezes na semana
+- name: FRIO
+  label: Durante o último mês, com que frequência você teve dificuldade para dormir
+    porque você sentiu muito frio
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nenhuma no último mês
+    1: Menos de uma vez por semana
+    2: Uma ou duas vezes por semana
+    3: Três ou mais vezes na semana
+- name: CALOR
+  label: Durante o último mês, com que frequência você teve dificuldade para dormir
+    porque você sentiu muito calor
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nenhuma no último mês
+    1: Menos de uma vez por semana
+    2: Uma ou duas vezes por semana
+    3: Três ou mais vezes na semana
+- name: SONHOS
+  label: Durante o último mês, com que frequência você teve dificuldade para dormir
+    porque você teve sonhos ruins
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nenhuma no último mês
+    1: Menos de uma vez por semana
+    2: Uma ou duas vezes por semana
+    3: Três ou mais vezes na semana
+- name: DOR
+  label: Durante o último mês, com que frequência você teve dificuldade para dormir
+    porque você teve dor
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nenhuma no último mês
+    1: Menos de uma vez por semana
+    2: Uma ou duas vezes por semana
+    3: Três ou mais vezes na semana
+- name: DIF_DORM
+  label: Durante o último mês, com que frequência você teve dificuldade para dormir
+    por outra(s) razão(ões), Com que frequência, durante o último mês, você teve dificuldade
+    para dormir devido a essa razão?
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nenhuma no último mês
+    1: Menos de uma vez por semana
+    2: Uma ou duas vezes por semana
+    3: Três ou mais vezes na semana
+- name: QUA_SONO
+  label: Durante o último mês como você classificaria a qualidade do seu sono de uma
+    maneira geral
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Muito boa
+    1: Boa
+    2: Ruim
+    3: Muito ruim
+- name: FREQ_MED
+  label: Durante o último mês, com que frequência você tomou medicamento (prescrito
+    ou “por conta própria”) para lhe ajudar a dormir?
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nenhuma no último mês
+    1: Menos de uma vez por semana
+    2: Uma ou duas vezes por semana
+    3: Três ou mais vezes na semana
+- name: DIF_ACOR
+  label: No último mês, que frequência você teve dificuldade para ficar acordado enquanto
+    dirigia, comia ou participava de uma atividade social (festa, reunião de amigos,
+    trabalho, estudo)
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nenhuma no último mês
+    1: Menos de uma vez por semana
+    2: Uma ou duas vezes por semana
+    3: Três ou mais vezes na semana
+- name: ANIMO
+  label: Durante o último mês, quão problemático foi pra você manter o entusiasmo
+    (ânimo) para fazer as coisas (suas atividades habituais)?
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nenhuma dificuldade
+    1: Um problema leve
+    2: Um problema razoável
+    3: Um grande problema
+- name: PARCEIRO
+  label: Você tem um(a) parceiro [esposo (a)] ou colega de quarto?
+  kind: categorical
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Não
+    1: Parceiro ou colega, mas em outro quarto
+    2: Parceiro no mesmo quarto, mas em outra cama
+    3: Parceiro na mesma cama
+- name: TEMP_VOC
+  label: Sente que, por causa do tempo que utiliza com o seu familiar, já não tem
+    tempo suficiente para você mesmo?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: ESTRES
+  label: Sente-se estressado/angustiado por ter que cuidar do seu familiar e, ao mesmo
+    tempo, ter que dar conta de outras responsabilidades (trabalho, outros familiares)?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: IRRIT
+  label: Sente -se irritado quando está perto do seu familiar?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: AFET_REL
+  label: Sente que o seu familiar afeta negativamente as suas relações com outros
+    familiares ou amigos?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: MEDO
+  label: Sente medo em relação ao futuro que espera o seu familiar?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: DEPENDE
+  label: Sente que o seu familiar depende inteiramente de você?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: TENSO
+  label: Sente -se tenso ou nervoso quando está perto do seu familiar?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: SAU_FIS
+  label: Sente que a sua saúde física tem sido afetada por cuidar do seu familiar?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: PRIV
+  label: Sente que a sua privacidade tem sido afetada por cuidar do seu familiar?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: VID_SOC
+  label: Sente que a sua vida social tem sido afetada por cuidar do seu familiar?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: DESCONF
+  label: Sente-se desconfortável em receber visitas em casa por causa do seu familiar?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: UNICA_P
+  label: Sente que o seu familiar espera que você seja a única pessoa com quem ele
+    pode contar?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: DINHEIRO
+  label: Sente que não tem dinheiro suficiente para cuidar do seu familiar, além das
+    suas despesas normais?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: CAP_CUI
+  label: Sente que não será capaz de cuidar do seu familiar por muito mais tempo?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: CONTROLE
+  label: Sente que perdeu o controle sobre a sua vida desde que começou a cuidar do
+    seu familiar?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: INCAPAZ
+  label: Sente-se incapaz de lidar com os problemas gerados pelo seu familiar?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: FAZ_MAIS
+  label: Sente que deveria fazer mais pelo seu familiar do que faz?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: CUID_MEL
+  label: Sente que poderia cuidar melhor do seu familiar?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: MAIS_AJUD
+  label: Sente que o seu familiar pede mais ajuda do que realmente precisa?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: EXAUSTO
+  label: Sente-se exausto ou esgotado quando está perto do seu familiar?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: CONST
+  label: Sente-se constrangido ou envergonhado com o comportamento do seu familiar?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: UNIC_RESP
+  label: Sente que o seu familiar parece esperar que você seja a única pessoa que
+    cuida dele (como se você fosse o único responsável)?
+  kind: ordinal
+  allowed_values:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    0: Nunca
+    1: Raramente
+    2: Algumas vezes
+    3: Bastantes vezes
+    4: Quase sempre
+- name: PSQI
+  label: PSQI informado (0–21)
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: ZARIT
+  label: Sobrecarga Zarit informada
+  kind: numeric
+  allowed_values: null
+  export_default: true
+  mapping_status: confirmed
+  labels: {}
+- name: PSQI_G
+  label: Qualidade do sono informada
+  kind: categorical
+  allowed_values:
+  - 1
+  - 2
+  export_default: true
+  mapping_status: confirmed
+  labels:
+    1: Boa qualidade (≤5)
+    2: Má qualidade (>5)

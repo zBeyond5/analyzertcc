@@ -52,3 +52,5 @@ watchdog==6.0.0
 websockets==17.4
 wrapt==2.5.2
 xlrd==2.0.2
+
+plotly==7.1.0
