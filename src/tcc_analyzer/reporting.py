@@ -77,18 +77,27 @@ def _fallback_document(tables,metadata):
     return ReportDocument('Resultados da análise bivariada',summary,(),{},(MULTIPLICITY,),tuple(tables.narrative+tables.notes))
 
 
-def _blocks(tables,metadata,document,figures):
+def load_report_style(name):
+    import yaml
+    if name not in ('editorial','article'):raise ValueError('Modelo de relatório desconhecido.')
+    path=Path(__file__).resolve().parents[2]/'configs/report_styles.yaml'
+    return yaml.safe_load(path.read_text(encoding='utf-8'))[name]
+
+
+def _blocks(tables,metadata,document,figures,style):
     """One content order for both formats; renderers own pagination."""
-    yield 'title',document.title,None
+    article=not style['include_toc']
+    yield 'title','Material para o artigo' if article else document.title,None
     if metadata.get('fictitious'):yield 'warning',FICTITIOUS,None
+    if article:yield 'small','Conteúdo parcial para integrar o artigo: procedimentos estatísticos e resultados. A redação final e a formatação para o periódico dependem da revisão da pesquisadora e da orientação.',None
     if metadata.get('generated_at'):yield 'small','Gerado em '+str(metadata['generated_at'])[:10]+'.',None
-    yield 'h1','1. Base analisada',None
+    if not article:yield 'h1','1. Base analisada',None
     for text in document.summary:yield 'text',text,None
-    yield 'h1','2. Procedimentos estatísticos',None
+    yield 'h1','1. Procedimentos estatísticos' if article else '2. Procedimentos estatísticos',None
     yield 'text','Foram utilizadas respostas completas em cada comparação, sem imputação. O critério de significância do projeto é valor de p menor que 0,05. Análises bivariadas não incluem ajuste por confundidores.',None
     for label,description in dict.fromkeys((c.method_label,c.method_explanation) for c in document.comparisons):
         yield 'text',f'{label}: {description}',None
-    yield 'h1','3. Caracterização das participantes',None
+    yield 'h1','2. Resultados' if article else '3. Caracterização das participantes',None
     table_number=0
     for frame,title in zip(tables.descriptive,('Características sociodemográficas','Características clínicas','Instrumentos de avaliação')):
         if frame.empty:continue
@@ -96,11 +105,11 @@ def _blocks(tables,metadata,document,figures):
         yield 'table_caption',f'Tabela {table_number}. {title}',None
         yield 'table','',frame
         yield 'small','Percentuais por respostas válidas. Terapias múltiplas usam o total de participantes e podem somar mais de 100%; ausências são indicadas separadamente.',None
-    yield 'h1','4. Resultados das comparações',None
+    if not article:yield 'h1','4. Resultados das comparações',None
     figure_number=0
     if not document.comparisons:yield 'text','Nenhuma comparação foi incluída neste documento.',None
     for i,c in enumerate(document.comparisons,1):
-        yield 'h2',f'4.{i}. {c.title}',None
+        yield 'h2',f'{2 if article else 4}.{i}. {c.title}',None
         yield 'small',c.family_label,None
         yield 'text',c.reading,None
         yield 'text',c.method_label+'. '+c.method_explanation,None
@@ -112,11 +121,19 @@ def _blocks(tables,metadata,document,figures):
             yield 'image','',figures[c.id]
             yield 'small',figures.get(c.id+'_caption','Distribuição das respostas completas desta comparação.'),None
             yield 'small','Fonte: elaboração do aplicativo a partir do banco informado.'+(' Dados fictícios para demonstração.' if metadata.get('fictitious') else ''),None
-    yield 'h1','5. Limitações da análise',None
+    yield 'h1','3. Notas de interpretação' if article else '5. Limitações da análise',None
     for text in document.limitations:yield 'text',text,None
-    if document.glossary:
+    if document.glossary and style['include_glossary']:
         yield 'h1','6. Como ler este relatório — Glossário',None
-        for term,meaning in document.glossary.items():yield 'text',term+': '+meaning,None
+        acronyms={'DP','IC95%','PSQI','OR','RP'}
+        if any(t in acronyms for t in document.glossary):
+            yield 'h2','Siglas utilizadas',None
+            for term,meaning in document.glossary.items():
+                if term in acronyms:yield 'text',term+': '+meaning,None
+        yield 'h2','Medidas e termos',None
+        for term,meaning in document.glossary.items():
+            if term not in acronyms:yield 'text',term+': '+meaning,None
+    if not style['include_technical_appendix']:return
     yield 'h1','Apêndice técnico',None
     yield 'text','Códigos, métodos e notas originais são preservados abaixo para rastreabilidade. As condições de aplicação de um teste não constituem confirmação do desenho do estudo.',None
     for frame in tables.bivariate:
@@ -150,14 +167,36 @@ def _pdf_styles():
     return styles
 
 
-def render_pdf(tables,metadata,output,*,document=None,figures=None):
+def render_pdf(tables,metadata,output,*,document=None,figures=None,style='editorial'):
     from io import BytesIO
-    from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,LongTable,TableStyle,Image
+    from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,LongTable,TableStyle,Image,PageBreak
+    from reportlab.platypus.tableofcontents import TableOfContents
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     document=document or _fallback_document(tables,metadata);figures=figures or {}
-    styles=_pdf_styles();available=A4[0]-100;elements=[]
-    for kind,text,value in _blocks(tables,metadata,document,figures):
+    config=load_report_style(style);styles=_pdf_styles();available=A4[0]-2*config['margin_pt'];elements=[]
+    class Index(TableOfContents):
+        def __init__(self,kind):
+            super().__init__();self.kind=kind
+            self.levelStyles=[styles['Small'],styles['Small']]
+        def notify(self,kind,stuff):
+            if kind==self.kind:super().notify('TOCEntry',stuff)
+    class ReportTemplate(SimpleDocTemplate):
+        def afterFlowable(self,flowable):
+            if not hasattr(flowable,'report_entry'):return
+            kind,level,title,key=flowable.report_entry
+            self.canv.bookmarkPage(key)
+            if kind=='TOCEntry':self.canv.addOutlineEntry(title,key,level=level,closed=False)
+            self.notify(kind,(level,escape(title),self.page,key))
+    blocks=list(_blocks(tables,metadata,document,figures,config))
+    for index,(kind,text,value) in enumerate(blocks):
+        if index==1 and config['include_toc']:
+            # Front matter precedes body, while title stays on the first page.
+            elements.extend((Paragraph('Sumário',styles['Heading1']),Index('TOCEntry'),Spacer(1,12)))
+            if config['include_lists']:
+                for target,label,notification in (('table_caption','Lista de tabelas','TableEntry'),('figure_caption','Lista de figuras','FigureEntry')):
+                    if any(b[0]==target for b in blocks):elements.extend((Paragraph(label,styles['Heading1']),Index(notification),Spacer(1,10)))
+            elements.append(PageBreak())
         if kind=='table':
             rows=[list(value.columns)]+list(value.itertuples(index=False,name=None))
             cells=[[Paragraph(escape(str(v)),styles['Cell']) for v in row] for row in rows]
@@ -173,23 +212,27 @@ def render_pdf(tables,metadata,output,*,document=None,figures=None):
         else:
             style={'title':'Title','h1':'Heading1','h2':'Heading2','small':'Small','warning':'Warning',
                    'figure_caption':'Caption','table_caption':'Caption'}.get(kind,'Normal')
-            elements.append(Paragraph(escape(str(text)),styles[style]))
+            paragraph=Paragraph(escape(str(text)),styles[style])
+            if kind in ('h1','h2','table_caption','figure_caption'):
+                notify='TOCEntry' if kind in ('h1','h2') else 'TableEntry' if kind=='table_caption' else 'FigureEntry'
+                paragraph.report_entry=(notify,1 if kind=='h2' else 0,str(text),f'entry-{index}')
+            elements.append(paragraph)
     def footer(canvas,doc):
         canvas.setFont('DejaVuSans',9);canvas.setFillColor(colors.HexColor('#52616B'))
         canvas.drawString(50,25,'Dados fictícios • demonstração' if metadata.get('fictitious') else 'Relatório de análise')
         canvas.drawRightString(A4[0]-50,25,str(doc.page))
-    SimpleDocTemplate(str(output),pagesize=A4,leftMargin=50,rightMargin=50,topMargin=50,bottomMargin=50,title=document.title,author='').build(elements,onFirstPage=footer,onLaterPages=footer)
+    ReportTemplate(str(output),pagesize=A4,leftMargin=config['margin_pt'],rightMargin=config['margin_pt'],topMargin=50,bottomMargin=50,title=document.title,author='').multiBuild(elements,onFirstPage=footer,onLaterPages=footer)
     return Path(output)
 
 
-def render_docx(tables,metadata,output,*,document=None,figures=None):
+def render_docx(tables,metadata,output,*,document=None,figures=None,style='editorial'):
     from io import BytesIO
     from docx import Document
     from docx.shared import Pt,RGBColor
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
     from PIL import Image
-    doc=Document();section=doc.sections[0]
+    config=load_report_style(style);doc=Document();section=doc.sections[0]
     section.page_width=Pt(595.28);section.page_height=Pt(841.89)
     section.top_margin=section.bottom_margin=section.left_margin=section.right_margin=Pt(50)
     for name in ('Normal','Title','Heading 1','Heading 2','Caption'):
@@ -199,9 +242,22 @@ def render_docx(tables,metadata,output,*,document=None,figures=None):
     for name in ('Heading 1','Heading 2','Caption'):doc.styles[name].paragraph_format.keep_with_next=True
     doc.styles['Caption'].font.size=Pt(9)
     document=document or _fallback_document(tables,metadata);figures=figures or {}
-    for kind,text,value in _blocks(tables,metadata,document,figures):
+    blocks=list(_blocks(tables,metadata,document,figures,config))
+    for index,(kind,text,value) in enumerate(blocks):
+        if index==1 and config['include_toc']:
+            heading=doc.add_paragraph('Sumário');heading.runs[0].bold=True;heading.runs[0].font.size=Pt(15)
+            field=OxmlElement('w:fldSimple');field.set(qn('w:instr'),'TOC \\o "1-2" \\h \\z \\u');doc.add_paragraph()._p.append(field)
+            if config['include_lists']:
+                for target,label,sequence in (('table_caption','Lista de tabelas','Tabela'),('figure_caption','Lista de figuras','Figura')):
+                    if any(b[0]==target for b in blocks):
+                        heading=doc.add_paragraph(label);heading.runs[0].bold=True;heading.runs[0].font.size=Pt(15)
+                        field=OxmlElement('w:fldSimple');field.set(qn('w:instr'),f'TOC \\h \\z \\c "{sequence}"');doc.add_paragraph()._p.append(field)
+            doc.add_paragraph('No Word, atualize os campos para preencher o sumário e as listas: selecione o documento e pressione F9. A paginação pode diferir do PDF.')
+            update=OxmlElement('w:updateFields');update.set(qn('w:val'),'true');doc.settings.element.append(update)
+            doc.add_page_break()
         if kind=='table':
-            table=doc.add_table(rows=1,cols=len(value.columns));table.style='Light Shading Accent 1'
+            table=doc.add_table(rows=1,cols=len(value.columns));table.style='Light Shading Accent 1';table.autofit=False
+            for column,width in zip(table.columns,table_widths(value,495)):column.width=Pt(width)
             header=OxmlElement('w:tblHeader');table.rows[0]._tr.get_or_add_trPr().append(header)
             for cell,v in zip(table.rows[0].cells,value.columns):cell.text=str(v)
             for row in value.itertuples(index=False,name=None):
@@ -217,6 +273,13 @@ def render_docx(tables,metadata,output,*,document=None,figures=None):
         elif kind in ('title','h1','h2'):doc.add_heading(text,{'title':0,'h1':1,'h2':2}[kind])
         else:
             paragraph=doc.add_paragraph(text,style='Caption' if kind.endswith('_caption') else None)
+            if kind.endswith('_caption'):
+                sequence='Figura' if kind=='figure_caption' else 'Tabela'
+                _,rest=text.split('. ',1)
+                paragraph.clear();paragraph.add_run(sequence+' ')
+                field=OxmlElement('w:fldSimple');field.set(qn('w:instr'),'SEQ '+sequence+' \\* ARABIC')
+                run=OxmlElement('w:r');number=OxmlElement('w:t');number.text=text.split('. ',1)[0].split()[-1];run.append(number);field.append(run);paragraph._p.append(field)
+                paragraph.add_run('. '+rest)
             if kind=='small':
                 for run in paragraph.runs:run.font.size=Pt(9)
     footer=section.footer.paragraphs[0]

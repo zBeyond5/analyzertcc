@@ -121,3 +121,44 @@ def build_report_figures(data,profile,comparisons,max_bytes):
         if total>max_bytes:raise DomainError('artifact_size','Os gráficos excedem o limite desta exportação. Reduza os cruzamentos para gerar o relatório completo.')
         figures[spec.id]=png;figures[spec.id+'_caption']=chart.caption
     return figures
+
+
+def refresh_report_style(*,manager,session,job,artifacts,data,profile,style):
+    """Replace only document presentation; calculations, bank and expiry are retained."""
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
+    import os,shutil,zipfile
+    from .reporting import load_report_style
+    load_report_style(style)
+    manager._check(session,job)
+    if style==artifacts.metadata.get('report_style'):return artifacts
+    with manager.presentation(session,job):
+        figures=build_report_figures(data,profile,tuple(a.spec for a in artifacts.results),manager.settings.max_artifact_bytes)
+        meta={**artifacts.metadata,'report_style':style,'files_sha256':dict(artifacts.metadata['files_sha256'])}
+        with TemporaryDirectory(prefix='.presentation-',dir=job.directory) as temporary:
+            stage=Path(temporary)
+            if not stage.resolve().is_relative_to(job.directory.resolve()):raise DomainError('access','Diretório de exportação inválido.')
+            docx=render_docx(artifacts.tables,meta,stage/'relatorio.docx',document=artifacts.presentation,figures=figures,style=style)
+            pdf=render_pdf(artifacts.tables,meta,stage/'relatorio.pdf',document=artifacts.presentation,figures=figures,style=style)
+            for path in (docx,pdf):meta['files_sha256'][path.name]=hashlib.sha256(path.read_bytes()).hexdigest()
+            manifest=write_json(stage/'manifesto.json',meta)
+            archive=stage/'resultado_completo.zip'
+            with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as zipped:
+                for key,path in job.artifacts.items():
+                    if key=='zip':continue
+                    replacement=stage/path.name
+                    zipped.write(replacement if replacement.exists() else path,path.name)
+            replacements={'docx':docx,'pdf':pdf,'manifest':manifest,'zip':archive}
+            if any(p.stat().st_size>manager.settings.max_artifact_bytes for p in replacements.values()):
+                raise DomainError('artifact_size','O relatório excede o limite de download. Reduza os cruzamentos.')
+            backup=stage/'backup';backup.mkdir()
+            moved=[]
+            try:
+                for key,path in replacements.items():
+                    destination=job.artifacts[key]
+                    shutil.copy2(destination,backup/destination.name)
+                    os.replace(path,destination);moved.append(destination)
+            except BaseException:
+                for path in moved:os.replace(backup/path.name,path)
+                raise
+        return RunArtifacts(dict(artifacts.files),artifacts.tables,artifacts.results,meta,artifacts.presentation)

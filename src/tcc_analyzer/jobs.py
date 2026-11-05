@@ -129,6 +129,18 @@ class JobManager:
         with self._lock:
             self._check(session,job);job.expires_at=self.clock()+timedelta(minutes=self.settings.retention_minutes);job.status='ready'
 
+    @contextmanager
+    def presentation(self,session,job):
+        """Regenerate documents under the same ownership, slots and original expiry."""
+        with self._lock:
+            self._check(session,job)
+            if job.status!='ready':raise DomainError('state','Conclua a análise antes de preparar outro modelo.')
+            if not self._slots.acquire(blocking=False):raise DomainError('busy','O servidor está ocupado. Tente preparar o modelo em instantes.')
+            job.status='running'
+        try:yield
+        finally:
+            with self._lock:job.status='ready';self._slots.release()
+
     def purge_expired_jobs(self):
         result=CleanupSummary()
         with self._lock:

@@ -216,7 +216,7 @@ def build_document(results,tables,profile,data,metadata):
     summary=[f'Base de análise: {total} registros na fonte; {included} participantes incluídas; {total-included} excluídas pelos critérios observáveis.',
              'Cada comparação utiliza apenas respostas completas, sem preencher respostas ausentes. Critérios não observáveis no banco não foram certificados.']
     origins=metadata.get('score_origins',profile.derived_rules.get('score_origins',{}))
-    for code,label in (('PSQI','Qualidade do sono'),('ZARIT','Sobrecarga')):
+    for code,label in (('PSQI','Qualidade do sono — Índice de Qualidade do Sono de Pittsburgh (PSQI), de 0 a 21 pontos'),('ZARIT','Sobrecarga — Escala de Sobrecarga de Zarit, versão de 22 itens, de 0 a 88 pontos')):
         origin=origins.get(code,'origem não registrada')
         summary.append(f'{label}: {origin}.')
     used={'n','p'}
@@ -228,7 +228,7 @@ def build_document(results,tables,profile,data,metadata):
     for name,term in (('correlation','Correlação'),('odds_ratio','OR'),('prevalence_ratio','RP')):
         if any(name in a.result.effects for a in results):used.add(term)
     glossary={k:v for k,v in TERM_DEFINITIONS.items() if k in used}
-    technical=[f'{v.name}: {field_title(v.name,profile)}' for v in profile.variables if v.kind!='text']
+    technical=[f'{v.name}: {field_title(v.name,profile)}' for v in profile.variables if v.kind!='text' and v.name in data]
     technical+=['ZARIT_CLASS: '+field_title('ZARIT_CLASS',profile)]
     for a in results:
         technical.append(f'{a.spec.id}: {a.spec.outcome} × {a.spec.predictor}; família {a.spec.family}; método {a.result.method}; tipo de p {a.result.p_kind}.')

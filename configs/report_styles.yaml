@@ -1,0 +1,18 @@
+editorial:
+  label: Relatório completo
+  include_toc: true
+  include_lists: true
+  include_glossary: true
+  include_technical_appendix: true
+  font_size_pt: 11
+  margin_pt: 50
+  paper: A4
+article:
+  label: Material para o artigo
+  include_toc: false
+  include_lists: false
+  include_glossary: false
+  include_technical_appendix: false
+  font_size_pt: 11
+  margin_pt: 50
+  paper: A4

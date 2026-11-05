@@ -39,6 +39,21 @@ def test_pipeline_demo_outputs(source_path,tmp_path):
         with zipfile.ZipFile(result.files['zip']) as z:
             assert len(z.namelist())==8
             assert 'entrada.xlsx' not in z.namelist()
+        from tcc_analyzer.pipeline import refresh_report_style
+        import hashlib
+        before=[(a.result.p_value,a.result.n_effective) for a in result.results]
+        expiry=j.expires_at
+        with pytest.raises(DomainError):refresh_report_style(manager=m,session=SessionContext(),job=j,artifacts=result,data=prepared.data,profile=p,style='article')
+        article=refresh_report_style(manager=m,session=s,job=j,artifacts=result,data=prepared.data,profile=p,style='article')
+        assert article.metadata['report_style']=='article'
+        assert [(a.result.p_value,a.result.n_effective) for a in article.results]==before
+        assert j.expires_at==expiry and j.status=='ready'
+        text='\n'.join(page.extract_text() for page in PdfReader(article.files['pdf']).pages)
+        assert 'Material para o artigo' in text and 'Apêndice técnico' not in text
+        manifest=json.loads(m.read_artifact(s,j,'manifest'))
+        assert manifest['files_sha256']['relatorio.pdf']==hashlib.sha256(m.read_artifact(s,j,'pdf')).hexdigest()
+        with zipfile.ZipFile(article.files['zip']) as z:
+            assert z.read('relatorio.pdf')==m.read_artifact(s,j,'pdf')
     finally:m.close()
 
 def test_pending_profile_blocks_real_analysis(source_path,tmp_path):

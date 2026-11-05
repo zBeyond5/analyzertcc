@@ -231,6 +231,7 @@ def render_results(state,manager):
             from ..presentation import build_document
             from ..analysis_population import select_population
             document=build_document(state.artifacts.results,state.artifacts.tables,state.profile,select_population(state.prepared.data,state.profile).data,state.artifacts.metadata)
+            state.artifacts.presentation=document
         with st.expander('Como ler o valor de p'):
             from ..presentation import term_definition
             st.write(term_definition('p'))
@@ -270,8 +271,18 @@ def render_exports(state,manager):
     if state.artifacts is None or not state.reviewed:st.info('Abra os resultados para continuar até o download.');return
     manager._check(state.session,state.job)
     with card('download_card'):
+        styles={'editorial':'Relatório completo','article':'Material para o artigo'}
+        style=st.selectbox('Apresentação do relatório',list(styles),format_func=styles.get,index=list(styles).index(state.artifacts.metadata.get('report_style','editorial')),key='report_style')
+        if style!=state.artifacts.metadata.get('report_style','editorial'):
+            from ..pipeline import refresh_report_style
+            from ..analysis_population import select_population
+            with st.spinner('Preparando os documentos neste modelo…'):
+                state.artifacts=refresh_report_style(manager=manager,session=state.session,job=state.job,artifacts=state.artifacts,data=select_population(state.prepared.data,state.profile).data,profile=state.profile,style=style)
+            state.download_key=None
+        if style=='article':st.caption('Procedimentos e resultados para integrar o artigo. A redação final e as normas do periódico precisam de revisão.')
         st.caption('Escolha o formato. O pacote completo reúne todos os arquivos.')
         labels={'zip':'Todos os arquivos (ZIP)','docx':'Relatório completo (Word)','pdf':'Relatório completo (PDF)','tables':'Tabelas (Excel)','xlsx':'Banco para Epi Info (Excel)','csv':'Banco para Epi Info (CSV)','dictionary':'Dicionário de variáveis','manifest':'Manifesto da análise','audit':'Auditoria das alterações'}
+        labels['docx']=styles[style]+' (Word)';labels['pdf']=styles[style]+' (PDF)'
         key=st.selectbox('Arquivo para baixar',list(labels),format_func=labels.get)
 
         if st.button('Preparar download',type='secondary' if state.download_key else 'primary',key='prepare_download'):state.download_key=key
