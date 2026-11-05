@@ -121,3 +121,11 @@ Revisão independente final concluída: três achados importantes reproduzidos a
 Pontos que a revisão independente não certifica: renderização visual/atualização dos campos do Word sem renderizador; validação científica/normativa e clientes externos; alteração independente do Hamachi. A revisão leu código e executou reproduções focadas; não repetiu toda a suíte ou a inspeção das páginas, cujas evidências são da execução principal.
 
 Verificação final após todas as correções: **197 testes aprovados em180,27s**, incluindo navegador real; compileall e pip check sem erros. Aplicativo iniciado com o código atual em127.0.0.1:8505, saúde HTTP200. Commits locais; nenhuma publicação ou push nesta rodada.
+
+
+## Falha de Plotly nos Resultados — 2026-11-05
+
+Erro informado: ModuleNotFoundError em ui/charts.py:4, no import de plotly.graph_objects. A ausência foi reproduzida bloqueando o import em teste do fluxo completo. O ambiente local possui Plotly7.1.0; não foi inspecionado o ambiente autenticado de produção. requirements.lock já contém o pacote, enquanto requirements.txt apenas o incluía e não havia acompanhado as mudanças do lock. Atualizado o manifesto reconhecido pelo Streamlit Cloud com a impressão digital normalizada do lock; regressão exige que alterações futuras do lock também atualizem o manifesto. Isso permite refazer a instalação na publicação, sem trocar versões.
+
+Proteção adicional: somente a falta de Plotly produz aviso compreensível e mantém resultados, tabelas, gráficos dos documentos e download do ZIP. Outros módulos ausentes continuam tratados como falha e não são mascarados. Testes RED→GREEN de ausência do pacote e atualização do manifesto; fluxo normal/gráficos também verificados. Validação autenticada do site permanece separada dos testes locais.
+Verificação da correção: 199 testes aprovados em171,71s; compileall, pip check e instalação simulada sem rede do requirements.txt aprovados. O rebuild e a presença efetiva do Plotly no ambiente autenticado do Streamlit Cloud não foram observados.

@@ -1,1 +1,3 @@
+# Keep this digest updated when requirements.lock changes so Community Cloud rebuilds dependencies.
+# lock-sha256: 712c43b88e36fbb659c9fbb357b5eee4a6aa29da27c0dd361d48ebbdad181cee
 -r requirements.lock

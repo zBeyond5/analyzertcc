@@ -18,6 +18,29 @@ def test_demo_reaches_download_without_technical_confirmations(tmp_path, monkeyp
     at.button(key='prepare_download').click().run()
     assert any('data:application/zip;base64,' in x.value for x in at.markdown)
 
+
+def test_missing_plotly_keeps_results_and_exports_available(tmp_path,monkeypatch):
+    import builtins,sys
+    monkeypatch.setenv('TCC_RUNTIME_ROOT',str(tmp_path/'missing-plotly-jobs'))
+    monkeypatch.delitem(sys.modules,'tcc_analyzer.ui.charts',raising=False)
+    original=builtins.__import__
+    def without_plotly(name,*args,**kwargs):
+        if name=='plotly' or name.startswith('plotly.'):
+            raise ModuleNotFoundError("No module named 'plotly'",name='plotly')
+        return original(name,*args,**kwargs)
+    monkeypatch.setattr(builtins,'__import__',without_plotly)
+    at=AppTest.from_file(Path(__file__).resolve().parents[1]/'app.py',default_timeout=60).run()
+    at.button(key='demo').click().run()
+    at.button(key='to_comparisons').click().run()
+    at.button(key='run_analysis').click().run()
+    assert not at.exception
+    assert not at.error
+    assert any('Gráficos interativos temporariamente indisponíveis' in message.value for message in at.info)
+    assert any('Participaram desta comparação' in message.value for message in at.markdown)
+    at.button(key='to_exports').click().run()
+    at.button(key='prepare_download').click().run()
+    assert any('data:application/zip;base64,' in message.value for message in at.markdown)
+
 def test_updated_population_ui_uses_eligible_rows(tmp_path,monkeypatch):
     import pandas as pd
     from dataclasses import replace

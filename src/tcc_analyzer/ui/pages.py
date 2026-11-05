@@ -225,7 +225,6 @@ def render_results(state,manager):
     st.header('Confira os resultados e o relatório')
     summary,tables,details=st.tabs(['Resumo','Tabelas','Detalhes'])
     with summary:
-        from .charts import render_charts
         document=state.artifacts.presentation
         if document is None:
             from ..presentation import build_document
@@ -245,7 +244,13 @@ def render_results(state,manager):
                 st.write(comparison.method_label+'. '+comparison.method_explanation)
                 for estimate in comparison.estimates:st.write(estimate)
             for warning in comparison.warnings:st.info(warning)
-        render_charts(state)
+        try:
+            from .charts import render_charts
+        except ModuleNotFoundError as error:
+            if not error.name or error.name.split('.')[0]!='plotly':raise
+            logging.error('Dependência gráfica indisponível: plotly; reinstale as dependências do aplicativo.')
+            st.info('Gráficos interativos temporariamente indisponíveis. Os gráficos do PDF e do Word, as tabelas e os downloads continuam disponíveis.')
+        else:render_charts(state)
     with tables:
         titles=('Características sociodemográficas','Características clínicas','Instrumentos de avaliação')
         for i,frame in enumerate(state.artifacts.tables.descriptive):
