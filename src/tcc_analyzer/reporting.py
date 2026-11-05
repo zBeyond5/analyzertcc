@@ -4,7 +4,7 @@ from xml.sax.saxutils import escape
 import pandas as pd
 from .models import ReportTables
 from .interpretation import interpret_p,LABELS
-from .presentation import field_title,category_title,ReportDocument,readable_number
+from .presentation import field_title,category_titles,ReportDocument,readable_number
 
 FICTITIOUS='Dados fictícios para teste; não representam resultados da pesquisa.'
 _PDF_LOCK=threading.Lock()
@@ -32,9 +32,8 @@ def build_tables(results,summaries,profile,*,data=None):
                 if name not in data:continue
                 var=variables.get(name);label=field_title(name,profile);valid=data[name].dropna();n=len(valid)
                 if name in ('ZARIT_CLASS','PSQI_G') or (var and var.kind in ('categorical','ordinal')):
-                    for code,count in valid.value_counts().sort_index().items():
-                        labels={1:'Ausente ou leve (0–20)',2:'Moderada (21–40)',3:'Moderada a severa (41–60)',4:'Severa (61–88)'} if name=='ZARIT_CLASS' else (var.labels if var else {})
-                        category=category_title(name,code,profile)
+                    counts=valid.value_counts().sort_index()
+                    for (code,count),category in zip(counts.items(),category_titles(name,counts.index,profile)):
                         denominator=len(data) if name in ('FISIO','FONO','TER_OCUP','PSI','PSICOP') else n
                         rows.append([label,str(category),int(count),number(100*count/denominator)+'%' if denominator else 'Não disponível'])
                 else:
@@ -172,6 +171,7 @@ def _pdf_styles():
     styles.add(ParagraphStyle('Cell',fontName='DejaVuSans',fontSize=9,leading=12,wordWrap='CJK'))
     styles.add(ParagraphStyle('Small',parent=styles['Normal'],fontSize=9,leading=13,textColor=colors.HexColor('#52616B')))
     styles.add(ParagraphStyle('Caption',parent=styles['Small'],fontName='DejaVuSans-Bold',keepWithNext=True))
+    styles.add(ParagraphStyle('FrontHeading',parent=styles['Heading1'],keepWithNext=False))
     styles.add(ParagraphStyle('Warning',parent=styles['Normal'],backColor=colors.HexColor('#E7F1F2'),borderPadding=7,spaceBefore=8,spaceAfter=12))
     return styles
 
@@ -206,10 +206,10 @@ def _render_pdf(tables,metadata,output,*,document=None,figures=None,style='edito
     for index,(kind,text,value) in enumerate(blocks):
         if index==1 and config['include_toc']:
             # Front matter precedes body, while title stays on the first page.
-            elements.extend((Paragraph('Sumário',styles['Heading1']),Index('TOCEntry'),Spacer(1,12)))
+            elements.extend((Paragraph('Sumário',styles['FrontHeading']),Index('TOCEntry'),Spacer(1,12)))
             if config['include_lists']:
                 for target,label,notification in (('table_caption','Lista de tabelas','TableEntry'),('figure_caption','Lista de figuras','FigureEntry')):
-                    if any(b[0]==target for b in blocks):elements.extend((Paragraph(label,styles['Heading1']),Index(notification),Spacer(1,10)))
+                    if any(b[0]==target for b in blocks):elements.extend((Paragraph(label,styles['FrontHeading']),Index(notification),Spacer(1,10)))
             elements.append(PageBreak())
         if kind=='table':
             rows=[list(value.columns)]+list(value.itertuples(index=False,name=None))

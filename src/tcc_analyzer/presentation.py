@@ -103,8 +103,20 @@ def term_definition(key):
 
 
 def category_titles(code,values,profile):
-    labels=tuple(category_title(code,value,profile) for value in values)
-    return tuple(f'{label} (grupo {i+1})' if labels.count(label)>1 else label for i,label in enumerate(labels))
+    from hashlib import sha256
+    code=ALIASES.get(code,code)
+    variable=next((v for v in profile.variables if v.name==code),None)
+    domain=tuple(variable.allowed_values or variable.labels.keys()) if variable else ()
+    if code=='ZARIT_CLASS':domain=(1,2,3,4)
+    domain_labels=tuple(category_title(code,value,profile) for value in domain)
+    titles=[]
+    for value in values:
+        label=category_title(code,value,profile)
+        if domain_labels.count(label)>1 or label=='Categoria sem definição confirmada':
+            identity=str(domain.index(value)+1) if value in domain else sha256(str(value).encode('utf-8')).hexdigest()[:6]
+            label+=f' (grupo {identity})'
+        titles.append(label)
+    return tuple(titles)
 
 
 def readable_number(value,digits=1):
@@ -245,6 +257,11 @@ def build_document(results,tables,profile,data,metadata):
     glossary={k:v for k,v in TERM_DEFINITIONS.items() if k in used}
     technical=[f'{v.name}: {field_title(v.name,profile)}' for v in profile.variables if v.kind!='text' and v.name in data]
     technical+=['ZARIT_CLASS: '+field_title('ZARIT_CLASS',profile)]
+    for code in data:
+        if kinds.get(code) not in ('categorical','ordinal'):continue
+        values=tuple(sorted(data[code].dropna().unique()))
+        for value,label in zip(values,category_titles(code,values,profile)):
+            technical.append(f'{code}={value}: {label}')
     for a in results:
         technical.append(f'{a.spec.id}: {a.spec.outcome} × {a.spec.predictor}; família {a.spec.family}; método {a.result.method}; tipo de p {a.result.p_kind}.')
         technical.extend(a.result.assumptions+a.result.warnings)

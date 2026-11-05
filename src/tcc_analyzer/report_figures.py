@@ -61,10 +61,10 @@ def render_figure(chart):
     from matplotlib.backends.backend_agg import FigureCanvasAgg
     from matplotlib import rc_context
     wrap=lambda value,width=42:'\n'.join(textwrap.wrap(str(value),width=width,break_long_words=True))
-    with _RENDER_LOCK,rc_context({'font.family':'DejaVu Sans','font.size':10,'axes.unicode_minus':False}):
-        longest=max([len(chart.x_title),len(chart.y_title)]+[len(str(c)) for c in chart.categories])
-        height=max(4.2,2.7+.32*len(chart.categories)+.16*(longest//42))
-        if chart.kind=='bar':height+=.25*len(chart.series)
+    with _RENDER_LOCK,rc_context({'font.family':'DejaVu Sans','font.size':12,'axes.unicode_minus':False,'text.parse_math':False}):
+        category_lines=[len(wrap(c).splitlines()) for c in chart.categories]
+        height=max(4.2,1.5+.20*sum(category_lines)+.2*len(category_lines))
+        if chart.kind=='bar':height+=.23*sum(len(wrap(s['name']).splitlines()) for s in chart.series)
         fig=Figure(figsize=(7.4,height),layout='constrained');FigureCanvasAgg(fig)
         ax=fig.add_subplot(111)
         try:
@@ -88,7 +88,7 @@ def render_figure(chart):
                 totals=chart.series[0]['totals']
                 ax.set_yticks(range(len(chart.categories)),[wrap(c)+f' ({n})' for c,n in zip(chart.categories,totals)])
                 ax.set_xlim(0,100);ax.set_xlabel(chart.x_title);ax.set_ylabel(wrap(chart.y_title))
-                ax.legend(loc='upper center',bbox_to_anchor=(.5,-.2),frameon=False,fontsize=9)
+                ax.legend(loc='upper center',bbox_to_anchor=(.5,-.2),frameon=False,fontsize=12)
             ax.spines[['top','right']].set_visible(False)
             ax.grid(axis='x',alpha=.15);ax.set_axisbelow(True)
             output=BytesIO();fig.savefig(output,format='png',dpi=145,bbox_inches='tight',pad_inches=.15,metadata={'Software':'Análise Bivariada'})

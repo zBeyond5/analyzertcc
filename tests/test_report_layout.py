@@ -91,6 +91,7 @@ def test_empty_and_hundred_comparison_documents_are_complete(tmp_path):
     document=replace(document,comparisons=comparisons)
     png=figures['burden'];figures={c.id:png for c in comparisons}
     path=render_pdf(tables,meta,tmp_path/'hundred.pdf',document=document,figures=figures)
+    assert 'Sumário' in PdfReader(path).pages[0].extract_text()
     with pymupdf.open(path) as doc:
         toc=doc.get_toc()
         assert sum(title.startswith('4.') and level==2 for level,title,page in toc)==100

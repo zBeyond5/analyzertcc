@@ -85,3 +85,29 @@ def test_identification_is_refused_in_document():
     from tcc_analyzer.models import AnalysisResult,ComparisonSpec,TestResult,DomainError
     a=AnalysisResult(ComparisonSpec('private','ID','ZARIT'),TestResult('pearson',3))
     with pytest.raises(DomainError):build_example((a,),pd.DataFrame({'ID':[1,2,3],'ZARIT':[20,30,40]}))
+
+
+def test_undefined_categories_remain_distinct_in_descriptive_table():
+    import pandas as pd
+    from tcc_analyzer.reporting import build_tables
+    tables=build_tables((),(),load_profile(),data=pd.DataFrame({'ESCOL':[1,1,2]}))
+    rows=tables.descriptive[0]
+    assert len(set(rows['Medida / categoria']))==2
+    assert all('sem definição confirmada' in label for label in rows['Medida / categoria'])
+    assert rows['Participantes'].tolist()==[2,1]
+
+
+def test_neutral_category_identity_is_stable_with_missing_pairs():
+    import pandas as pd
+    from tcc_analyzer.report_figures import build_chart_data
+    from tcc_analyzer.models import ComparisonSpec
+    from tcc_analyzer.presentation import build_document
+    from tcc_analyzer.reporting import build_tables
+    profile=load_profile();df=pd.DataFrame({'ESCOL':[1,2,2,3,3],'ZARIT':[None,10,20,30,40]})
+    spec=ComparisonSpec('groups','ESCOL','ZARIT')
+    tables=build_tables((),(),profile,data=df)
+    chart=build_chart_data(df,profile,spec)
+    rows=tables.descriptive[0]['Medida / categoria'].tolist()
+    assert chart.categories==(rows[1],rows[2])
+    document=build_document((),tables,profile,df,{})
+    assert any('ESCOL=2' in line and rows[1] in line for line in document.technical_notes)

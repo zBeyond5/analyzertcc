@@ -46,3 +46,33 @@ def test_unknown_categories_remain_visually_distinct():
     chart=build_chart_data(sample(),p,ComparisonSpec('unknown','PSQI_G','ZARIT'))
     assert len(set(chart.categories))==2
     assert all('sem definição confirmada' in name for name in chart.categories)
+
+
+def test_custom_labels_are_literal_not_math_commands():
+    from dataclasses import replace
+    p=load_updated_profile()
+    p=replace(p,variables=tuple(replace(v,label=r'Preço $\notacommand$') if v.name=='ZARIT' else v for v in p.variables))
+    chart=build_chart_data(sample(),p,ComparisonSpec('literal','PSQI','ZARIT'))
+    assert render_figure(chart).startswith(b'\x89PNG')
+
+
+def test_long_category_labels_do_not_overlap(monkeypatch):
+    from dataclasses import replace
+    from matplotlib.figure import Figure
+    p=load_updated_profile()
+    labels={i:f'Grupo {i} '+('categoria personalizada '*13) for i in range(1,5)}
+    p=replace(p,variables=tuple(replace(v,labels=labels) if v.name=='ESCOL' else v for v in p.variables))
+    df=pd.DataFrame({'ESCOL':[1,1,2,2,3,3,4,4],'ZARIT':[10,20,30,40,50,60,70,80]})
+    original=Figure.savefig
+    def check_and_save(fig,*args,**kwargs):
+        fig.canvas.draw()
+        boxes=sorted((label.get_window_extent(fig.canvas.get_renderer()) for label in fig.axes[0].get_yticklabels()),key=lambda b:b.y0)
+        assert all(a.y1+2<=b.y0 for a,b in zip(boxes,boxes[1:]))
+        return original(fig,*args,**kwargs)
+    monkeypatch.setattr(Figure,'savefig',check_and_save)
+    chart=build_chart_data(df,p,ComparisonSpec('long','ESCOL','ZARIT'))
+    from PIL import Image
+    from io import BytesIO
+    png=render_figure(chart)
+    image=Image.open(BytesIO(png))
+    assert 12*145/72*min(495/image.width,540/image.height)>=9
